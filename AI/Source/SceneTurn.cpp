@@ -46,6 +46,7 @@ void SceneTurn::Init()
 	m_myGrid[m_start.y * m_noGrid + m_start.x] = Maze::TILE_EMPTY;
 	DFS(m_start);
 	m_rightOffset = 48.f;
+	//im just testing out some stuff
 }
 
 GameObject* SceneTurn::FetchGO()
