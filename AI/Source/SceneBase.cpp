@@ -149,7 +149,7 @@ void SceneBase::Init()
 	meshList[GEO_BLACK]->textureID = LoadTGA("Image//black.tga");
 
 	meshList[GEO_HEXWHITE] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
-	meshList[GEO_HEXWHITE]->textureID = LoadTGA("Image//healthpack.tga");
+	meshList[GEO_HEXWHITE]->textureID = LoadTGA("Image//hexwhite.tga");
 	meshList[GEO_HEXGREY] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_HEXGREY]->textureID = LoadTGA("Image//hexgrey.tga");
 	meshList[GEO_HEXBLACK] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
@@ -158,6 +158,10 @@ void SceneBase::Init()
 	meshList[GEO_HEXGHOST]->textureID = LoadTGA("Image//hexghost.tga");
 	meshList[GEO_HEXGO] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_HEXGO]->textureID = LoadTGA("Image//hexgo.tga");
+
+	//Pickuppables
+	meshList[GEO_HPPACK] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_HPPACK]->textureID = LoadTGA("Image//healthpack.tga");
 
 	bLightEnabled = false;
 }

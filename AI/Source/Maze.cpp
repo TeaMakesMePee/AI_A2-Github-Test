@@ -31,7 +31,7 @@ void Maze::Generate(unsigned key, unsigned size, MazePt start, float wallLoad)
 			continue;
 		if (m_grid[chosen] == TILE_EMPTY)
 		{
-			//m_grid[chosen] = TILE_WALL;
+			m_grid[chosen] = TILE_WALL;
 			++i;
 		}
 	}

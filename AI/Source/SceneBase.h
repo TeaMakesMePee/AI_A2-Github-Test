@@ -71,6 +71,7 @@ public:
 		GEO_HEXBLACK,
 		GEO_HEXGHOST,
 		GEO_HEXGO,
+		GEO_HPPACK,
 		NUM_GEOMETRY,
 	};
 public:
