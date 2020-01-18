@@ -72,6 +72,9 @@ public:
 		GEO_HEXGHOST,
 		GEO_HEXGO,
 		GEO_HPPACK,
+		GEO_DMGBOOST,
+		GEO_DRUG,
+		GEO_FOOD,
 		NUM_GEOMETRY,
 	};
 public:

@@ -162,6 +162,12 @@ void SceneBase::Init()
 	//Pickuppables
 	meshList[GEO_HPPACK] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_HPPACK]->textureID = LoadTGA("Image//healthpack.tga");
+	meshList[GEO_DMGBOOST] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_DMGBOOST]->textureID = LoadTGA("Image//damageboost.tga");
+	meshList[GEO_DRUG] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_DRUG]->textureID = LoadTGA("Image//drug.tga");
+	meshList[GEO_FOOD] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_FOOD]->textureID = LoadTGA("Image//food.tga");
 
 	bLightEnabled = false;
 }
