@@ -15,6 +15,7 @@ class Maze
 public:
 	enum TILE_CONTENT
 	{
+		TILE_PLAYER = -2,
 		TILE_WALL = -1,
 		TILE_FOG = 0,
 		TILE_EMPTY = 1,

@@ -668,7 +668,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 		if (curr.y > 0)
 		{
 			MazePt next(curr.x, curr.y - 1);
-			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 			{
 				unvisited.push_back(next);
 
@@ -688,7 +688,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 		if (curr.x > 0)
 		{
 			MazePt next(curr.x - 1, curr.y);
-			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 			{
 				unvisited.push_back(next);
 
@@ -708,7 +708,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 		if (curr.x < m_noGrid - 1)
 		{
 			MazePt next(curr.x + 1, curr.y);
-			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 			{
 				unvisited.push_back(next);
 
@@ -731,7 +731,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 			if (curr.x - 1 > -1 && curr.y + 1 < m_noGrid)
 			{
 				MazePt next(curr.x - 1, curr.y + 1);
-				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 				{
 					unvisited.push_back(next);
 
@@ -753,7 +753,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 			if (curr.x + 1 < m_noGrid && curr.y + 1 < m_noGrid)
 			{
 				MazePt next(curr.x + 1, curr.y + 1);
-				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 				{
 					unvisited.push_back(next);
 
@@ -777,7 +777,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 			if (curr.x - 1 > -1 && curr.y - 1 > -1)
 			{
 				MazePt next(curr.x - 1, curr.y - 1);
-				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 				{
 					unvisited.push_back(next);
 
@@ -799,7 +799,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 			if (curr.x + 1 < m_noGrid && curr.y - 1 > -1)
 			{
 				MazePt next(curr.x + 1, curr.y - 1);
-				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+				if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 				{
 					unvisited.push_back(next);
 
@@ -957,16 +957,16 @@ void SceneTurn::Update(double dt)
 		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
 		std::fill(go->visited.begin(), go->visited.end(), false);
 		//set go->curr to an empty tile
-		for (int x = 0; x < m_maze.m_grid.size(); ++x)
+		for (int x = 0; x < m_myGrid.size(); ++x)
 		{
-			if (m_maze.m_grid[x] == Maze::TILE_EMPTY)
+			if (m_myGrid[x] == Maze::TILE_EMPTY)
 			{
 				go->curr.Set(x % m_noGrid, x / m_noGrid);
 				break;
 			}
 		}
 		go->stack.push_back(go->curr);
-		go->grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_EMPTY;
+		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 	}
 	else if (bSpaceState && !Application::IsKeyPressed(VK_SPACE))
 	{   
@@ -1000,7 +1000,9 @@ void SceneTurn::Update(double dt)
 					{
 						if (go->path[x].x == go->curr.x && go->path[x].y == go->curr.y)
 						{
+							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_EMPTY;
 							go->curr = go->path[x + 1];
+							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 							break;
 						}
 					}
@@ -1133,7 +1135,7 @@ void SceneTurn::Render()
 			modelStack.PushMatrix();
 			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * y + m_gridOffset + ((x % 2) ? m_gridSize * 0.5f : 0), 0);
 			modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
-			switch (m_maze.m_grid[y * m_noGrid + x])
+			switch (m_myGrid[y * m_noGrid + x])
 			{
 			case Maze::TILE_WALL:
 				RenderMesh(meshList[GEO_HEXBLACK], false);
