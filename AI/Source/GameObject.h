@@ -43,7 +43,15 @@ struct GameObject
 	int visRadius;
 	std::vector<int> visIndexes;
 
-	GameObject(GAMEOBJECT_TYPE typeValue = GO_BALL);
+	//GameObject Stats
+	float health;
+	float damage;
+	float speed;
+	
+	int inventorySize;
+	std::vector<Maze::LOOT_TYPE> inventoryList;
+
+	GameObject(int size, GAMEOBJECT_TYPE typeValue = GO_BALL);
 	~GameObject();
 };
 

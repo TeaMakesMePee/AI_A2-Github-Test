@@ -64,7 +64,7 @@ GameObject* SceneTurn::FetchGO()
 	}
 	for (unsigned i = 0; i < 10; ++i)
 	{
-		GameObject *go = new GameObject(GameObject::GO_NONE);
+		GameObject *go = new GameObject(1, GameObject::GO_NONE);
 		m_goList.push_back(go);
 	}
 	return FetchGO();
@@ -1014,6 +1014,22 @@ void SceneTurn::Update(double dt)
 		}
 	}
 
+	//Check of GO has picked up Loot
+	for (auto go : m_goList)
+	{
+		int goIndex = go->curr.y * m_noGrid + go->curr.x;
+		for (int x = 0; x < m_maze.m_loot.size(); ++x)
+		{
+			if (goIndex == m_maze.m_loot[x]->index)
+			{
+				if (go->inventoryList.size() < go->inventorySize)
+				{
+					go->inventoryList.push_back(m_maze.m_loot[x]->type);
+					m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
+				}
+			}
+		}
+	}
 }
 
 void SceneTurn::RenderGO(GameObject *go)
