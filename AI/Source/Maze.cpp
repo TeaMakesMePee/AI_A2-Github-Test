@@ -23,7 +23,7 @@ void Maze::Generate(unsigned key, unsigned size, MazePt start, float wallLoad)
 	m_grid.resize(total);
 	std::fill(m_grid.begin(), m_grid.end(), TILE_EMPTY);
 	unsigned startId = start.y * size + start.x;
-	srand(key);
+	srand(time(NULL));
 	for (int i = 0; i < (int)total * wallLoad;)
 	{
 		unsigned chosen = rand() % total;
@@ -54,6 +54,7 @@ void Maze::Generate(unsigned key, unsigned size, MazePt start, float wallLoad)
 
 void Maze::GenerateLoot(float lootLoad)
 {
+	srand(time(NULL));
 	for (int i = 0; i < (int)m_grid.size() * lootLoad;)
 	{
 		unsigned chosen = rand() % (int)m_grid.size();
