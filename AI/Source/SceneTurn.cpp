@@ -36,6 +36,7 @@ void SceneTurn::Init()
 	m_mazeKey = 0;
 	m_wallLoad = 0.3f;
 	m_maze.Generate(m_mazeKey, m_noGrid, m_start, m_wallLoad); //Generate new maze
+	m_maze.GenerateLoot(0.025f);
 	m_myGrid.resize(m_noGrid * m_noGrid);
 	m_visited.resize(m_noGrid * m_noGrid);
 	m_visible.resize(m_noGrid * m_noGrid);
@@ -1029,6 +1030,29 @@ void SceneTurn::RenderGO(GameObject *go)
 	modelStack.PopMatrix();
 }
 
+void SceneTurn::RenderLoot(int index, Maze::LOOT_TYPE type)
+{
+	modelStack.PushMatrix();
+	modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * (index % m_noGrid) * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * (index / m_noGrid) + m_gridOffset + (((index % m_noGrid) % 2) ? m_gridSize * 0.5f : 0), 0);
+	modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
+	switch (type)
+	{
+	case Maze::LOOT_FOOD:
+		RenderMesh(meshList[GEO_FOOD], false);
+		break;
+	case Maze::LOOT_DRUG:
+		RenderMesh(meshList[GEO_DRUG], false);
+		break;
+	case Maze::LOOT_HPPACK:
+		RenderMesh(meshList[GEO_HPPACK], false);
+		break;
+	case Maze::LOOT_DMGBOOST:
+		RenderMesh(meshList[GEO_DMGBOOST], false);
+		break;
+	}
+	modelStack.PopMatrix();
+}
+
 void SceneTurn::UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius)
 {
 	std::vector<MazePt> nextList;
@@ -1088,8 +1112,8 @@ void SceneTurn::Render()
 	{
 		for (int x = 0; x < m_noGrid; ++x)
 		{
-			if (!m_visible[y * m_noGrid + x])
-				continue;
+			//if (!m_visible[y * m_noGrid + x])
+				//continue;
 			modelStack.PushMatrix();
 			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * y + m_gridOffset + ((x % 2) ? m_gridSize * 0.5f : 0), 0);
 			modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
@@ -1110,13 +1134,19 @@ void SceneTurn::Render()
 	}
 
 	//Rendering of ghost
-	int xCurr = m_maze.GetCurr().x;
-	int yCurr = m_maze.GetCurr().y;
-	modelStack.PushMatrix();
-	modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * xCurr * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * yCurr + m_gridOffset + ((xCurr % 2) ? m_gridSize * 0.5f : 0), 0);
-	modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
-	RenderMesh(meshList[GEO_HEXGHOST], false);
-	modelStack.PopMatrix();
+	//int xCurr = m_maze.GetCurr().x;
+	//int yCurr = m_maze.GetCurr().y;
+	//modelStack.PushMatrix();
+	//modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * xCurr * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * yCurr + m_gridOffset + ((xCurr % 2) ? m_gridSize * 0.5f : 0), 0);
+	//modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
+	//RenderMesh(meshList[GEO_HEXGHOST], false);
+	//modelStack.PopMatrix();
+
+	//Rendering of Loot
+	for (auto loot : m_maze.m_loot)
+	{
+		RenderLoot(loot->index, loot->type);
+	}
 
 	//Rendering of GOs
 	for (auto go : m_goList)

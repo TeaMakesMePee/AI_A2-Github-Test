@@ -19,6 +19,7 @@ public:
 	virtual void Exit();
 
 	void RenderGO(GameObject *go);
+	void RenderLoot(int index, Maze::LOOT_TYPE type);
 	void UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius);
 
 	GameObject* FetchGO();

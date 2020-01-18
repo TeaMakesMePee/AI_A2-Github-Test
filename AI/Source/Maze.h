@@ -30,9 +30,23 @@ public:
 		DIR_BOT_RIGHT,
 		DIR_BOT_LEFT
 	};
+	enum LOOT_TYPE
+	{
+		LOOT_FOOD,
+		LOOT_DRUG,
+		LOOT_HPPACK,
+		LOOT_DMGBOOST
+	};
+	struct Loot
+	{
+		Loot(int i, Maze::LOOT_TYPE type) : index(i), type(type) { }
+		int index;
+		Maze::LOOT_TYPE type;
+	};
 	Maze();
 	~Maze();
 	void Generate(unsigned key, unsigned size, MazePt start, float wallLoad);
+	void GenerateLoot(float lootLoad);
 	bool Move(DIRECTION direction);
 	unsigned GetKey();
 	unsigned GetSize();
@@ -42,7 +56,8 @@ public:
 	void SetNumMove(int num);
 
 	TILE_CONTENT See(MazePt tile);
-	std::vector<TILE_CONTENT> m_grid; //move from private
+	std::vector<TILE_CONTENT> m_grid; //move from private
+	std::vector<Loot*> m_loot;
 private:
 	//Do not make these public
 	unsigned m_key;

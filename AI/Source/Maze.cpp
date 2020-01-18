@@ -52,6 +52,29 @@ void Maze::Generate(unsigned key, unsigned size, MazePt start, float wallLoad)
 	m_numMove = 0;
 }
 
+void Maze::GenerateLoot(float lootLoad)
+{
+	for (int i = 0; i < (int)m_grid.size() * lootLoad;)
+	{
+		unsigned chosen = rand() % (int)m_grid.size();
+		if (m_grid[chosen] == TILE_EMPTY)
+		{
+			float percent = Math::RandIntMinMax(0, 100);
+			Loot* loot;
+			if (percent <= 15)
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_HPPACK);
+			else if (percent <= 30)
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_DMGBOOST);
+			else if (percent <= 65)
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_DRUG);
+			else if (percent <= 100)
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_FOOD);
+			m_loot.push_back(loot);
+			++i;
+		}
+	}
+}
+
 unsigned Maze::GetKey()
 {
 	return m_key;
