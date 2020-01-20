@@ -75,6 +75,8 @@ public:
 		GEO_DMGBOOST,
 		GEO_DRUG,
 		GEO_FOOD,
+		GEO_WATER,
+		GEO_MUD,
 		NUM_GEOMETRY,
 	};
 public:

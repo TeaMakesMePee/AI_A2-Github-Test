@@ -60,7 +60,7 @@ void Maze::GenerateLoot(float lootLoad)
 		unsigned chosen = rand() % (int)m_grid.size();
 		if (m_grid[chosen] == TILE_EMPTY)
 		{
-			float percent = Math::RandIntMinMax(0, 100);
+			int percent = Math::RandIntMinMax(0, 100);
 			Loot* loot;
 			if (percent <= 15)
 				loot = new Loot(chosen, LOOT_TYPE::LOOT_HPPACK);
@@ -71,6 +71,24 @@ void Maze::GenerateLoot(float lootLoad)
 			else if (percent <= 100)
 				loot = new Loot(chosen, LOOT_TYPE::LOOT_FOOD);
 			m_loot.push_back(loot);
+			++i;
+		}
+	}
+}
+
+void Maze::GenerateTiles(float tileLoad)
+{
+	srand(time(NULL));
+	for (int i = 0; i < (int)m_grid.size() * tileLoad;)
+	{
+		unsigned chosen = rand() % (int)m_grid.size();
+		if (m_grid[chosen] == TILE_EMPTY)
+		{
+			int percent = Math::RandIntMinMax(0, 100);
+			if (percent <= 30)
+				m_grid[chosen] = TILE_MUD;
+			else if (percent <= 100)
+				m_grid[chosen] = TILE_WATER;
 			++i;
 		}
 	}

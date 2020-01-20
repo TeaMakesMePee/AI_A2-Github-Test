@@ -19,6 +19,8 @@ public:
 		TILE_WALL = -1,
 		TILE_FOG = 0,
 		TILE_EMPTY = 1,
+		TILE_WATER = 2,
+		TILE_MUD = 3
 	};
 	enum DIRECTION
 	{
@@ -48,6 +50,7 @@ public:
 	~Maze();
 	void Generate(unsigned key, unsigned size, MazePt start, float wallLoad);
 	void GenerateLoot(float lootLoad);
+	void GenerateTiles(float tileLoad);
 	bool Move(DIRECTION direction);
 	unsigned GetKey();
 	unsigned GetSize();

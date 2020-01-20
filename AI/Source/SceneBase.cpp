@@ -148,12 +148,6 @@ void SceneBase::Init()
 	meshList[GEO_BLACK] = MeshBuilder::GenerateQuad("reversi", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_BLACK]->textureID = LoadTGA("Image//black.tga");
 
-	meshList[GEO_HEXWHITE] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
-	meshList[GEO_HEXWHITE]->textureID = LoadTGA("Image//hexwhite.tga");
-	meshList[GEO_HEXGREY] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
-	meshList[GEO_HEXGREY]->textureID = LoadTGA("Image//hexgrey.tga");
-	meshList[GEO_HEXBLACK] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
-	meshList[GEO_HEXBLACK]->textureID = LoadTGA("Image//hexblack.tga");
 	meshList[GEO_HEXGHOST] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_HEXGHOST]->textureID = LoadTGA("Image//hexghost.tga");
 	meshList[GEO_HEXGO] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
@@ -168,6 +162,19 @@ void SceneBase::Init()
 	meshList[GEO_DRUG]->textureID = LoadTGA("Image//drug.tga");
 	meshList[GEO_FOOD] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_FOOD]->textureID = LoadTGA("Image//food.tga");
+
+
+	//Tiles
+	meshList[GEO_WATER] = MeshBuilder::GenerateQuad("watertile", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_WATER]->textureID = LoadTGA("Image//hexwater.tga");
+	meshList[GEO_MUD] = MeshBuilder::GenerateQuad("mudtile", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_MUD]->textureID = LoadTGA("Image//hexmud.tga");
+	meshList[GEO_HEXWHITE] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_HEXWHITE]->textureID = LoadTGA("Image//hexwhite.tga");
+	meshList[GEO_HEXGREY] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_HEXGREY]->textureID = LoadTGA("Image//hexgrey.tga");
+	meshList[GEO_HEXBLACK] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
+	meshList[GEO_HEXBLACK]->textureID = LoadTGA("Image//hexblack.tga");
 
 	bLightEnabled = false;
 }

@@ -36,7 +36,8 @@ void SceneTurn::Init()
 	m_mazeKey = 0;
 	m_wallLoad = 0.3f;
 	m_maze.Generate(m_mazeKey, m_noGrid, m_start, m_wallLoad); //Generate new maze
-	m_maze.GenerateLoot(0.025f);
+	m_maze.GenerateTiles(0.1f);
+	m_maze.GenerateLoot(0.045f);
 	m_myGrid.resize(m_noGrid * m_noGrid);
 	m_visited.resize(m_noGrid * m_noGrid);
 	m_visible.resize(m_noGrid * m_noGrid);
@@ -82,7 +83,7 @@ void SceneTurn::DFS(MazePt curr)
 		{
 			if (m_maze.Move(Maze::DIR_UP) == true)
 			{
-				m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+				m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 				DFS(next);
 				m_maze.Move(Maze::DIR_DOWN);
 			}
@@ -101,7 +102,7 @@ void SceneTurn::DFS(MazePt curr)
 		{
 			if (m_maze.Move(Maze::DIR_DOWN) == true)
 			{
-				m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+				m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 				DFS(next);
 				m_maze.Move(Maze::DIR_UP);
 			}
@@ -120,7 +121,7 @@ void SceneTurn::DFS(MazePt curr)
 		{
 			if (m_maze.Move(Maze::DIR_LEFT) == true)
 			{
-				m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+				m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 				DFS(next);
 				m_maze.Move(Maze::DIR_RIGHT);
 			}
@@ -139,7 +140,7 @@ void SceneTurn::DFS(MazePt curr)
 		{
 			if (m_maze.Move(Maze::DIR_RIGHT) == true)
 			{
-				m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+				m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 				DFS(next);
 				m_maze.Move(Maze::DIR_LEFT);
 			}
@@ -160,7 +161,7 @@ void SceneTurn::DFS(MazePt curr)
 			{
 				if (m_maze.Move(Maze::DIR_TOP_LEFT) == true)
 				{
-					m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+					m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 					DFS(next);
 					m_maze.Move(Maze::DIR_BOT_RIGHT);
 				}
@@ -179,7 +180,7 @@ void SceneTurn::DFS(MazePt curr)
 			{
 				if (m_maze.Move(Maze::DIR_TOP_RIGHT) == true)
 				{
-					m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+					m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 					DFS(next);
 					m_maze.Move(Maze::DIR_BOT_LEFT);
 				}
@@ -200,7 +201,7 @@ void SceneTurn::DFS(MazePt curr)
 			{
 				if (m_maze.Move(Maze::DIR_BOT_LEFT) == true)
 				{
-					m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+					m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 					DFS(next);
 					m_maze.Move(Maze::DIR_TOP_RIGHT);
 				}
@@ -219,7 +220,7 @@ void SceneTurn::DFS(MazePt curr)
 			{
 				if (m_maze.Move(Maze::DIR_BOT_RIGHT) == true)
 				{
-					m_myGrid[next.y * m_noGrid + next.x] = Maze::TILE_EMPTY;
+					m_myGrid[next.y * m_noGrid + next.x] = m_maze.m_grid[next.y * m_noGrid + next.x];
 					DFS(next);
 					m_maze.Move(Maze::DIR_TOP_LEFT);
 				}
@@ -322,20 +323,6 @@ void SceneTurn::DFSOnce(GameObject* go)
 		}
 	}
 
-	//check if down is visited
-	if (go->curr.y - 1 > -1)
-	{
-		if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x])
-		{
-			go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] = m_maze.See(MazePt(go->curr.x, go->curr.y - 1));
-			if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] == Maze::TILE_EMPTY)
-			{
-				go->curr.y -= 1;
-				return;
-			}
-		}
-	}
-
 	//check if left is visited
 	if (go->curr.x - 1 > -1)
 	{
@@ -429,6 +416,20 @@ void SceneTurn::DFSOnce(GameObject* go)
 					go->curr.y -= 1;
 					return;
 				}
+			}
+		}
+	}
+
+	//check if down is visited
+	if (go->curr.y - 1 > -1)
+	{
+		if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x])
+		{
+			go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] = m_maze.See(MazePt(go->curr.x, go->curr.y - 1));
+			if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] == Maze::TILE_EMPTY)
+			{
+				go->curr.y -= 1;
+				return;
 			}
 		}
 	}
@@ -591,7 +592,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 	go->path.clear();
 	
 	MazePt start, curr = go->curr;
-	go->aLocal[curr.y * m_noGrid + curr.x] = 0.f;
+	go->aLocal[curr.y * m_noGrid + curr.x] = 1.f;
 
 	float endxPos = m_gridSize * appliedXScale * end.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 	float endyPos = (!(end.x % 2) ? m_gridSize * end.y + m_gridOffset : m_gridSize * end.y + m_gridOffset + m_gridSize * 0.5f);
@@ -648,14 +649,14 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 		if (curr.y < m_noGrid - 1)
 		{
 			MazePt next(curr.x, curr.y + 1);
-			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] != Maze::TILE_WALL)
+			if (!go->visited[next.y * m_noGrid + next.x] && m_myGrid[next.y * m_noGrid + next.x] > -1)
 			{
 				unvisited.push_back(next);
 
 				float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 				float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 				if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 				{
@@ -675,7 +676,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 				float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 				float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 				if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 				{
@@ -695,7 +696,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 				float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 				float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 				if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 				{
@@ -715,7 +716,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 				float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 				float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+				float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 				if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 				{
@@ -738,7 +739,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 					float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 					float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 					if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 					{
@@ -760,7 +761,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 					float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 					float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 					if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 					{
@@ -784,7 +785,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 					float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 					float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 					if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 					{
@@ -806,7 +807,7 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 					float nextxPos = m_gridSize * appliedXScale * next.x * 0.75f + m_gridSize * appliedXScale * 0.5f;
 					float nextyPos = (!(next.x % 2) ? m_gridSize * next.y + m_gridOffset : m_gridSize * next.y + m_gridOffset + m_gridSize * 0.5f);
 
-					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
+					float nextLower = go->aLocal[curr.y * m_noGrid + curr.x] + m_myGrid[next.y * m_noGrid + next.x] * (Vector3(nextxPos, nextyPos, 0.f) - Vector3(currxPos, curryPos, 0.f)).Length();
 
 					if (nextLower < go->aLocal[next.y * m_noGrid + next.x])
 					{
@@ -817,7 +818,6 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 				}
 			}
 		}
-
 	}
 
 	return false;
@@ -937,12 +937,97 @@ void SceneTurn::Update(double dt)
 	{
 		bRButtonState = true;
 		std::cout << "RBUTTON DOWN" << std::endl;
+		double x, y;
+		Application::GetCursorPos(&x, &y);
+		int w = Application::GetWindowWidth();
+		int h = Application::GetWindowHeight();
+		float posX = static_cast<float>(x) / w * m_worldWidth;
+		float posY = (h - static_cast<float>(y)) / h * m_worldHeight;
+		int xIndex;
+		int yIndex;
+		float dist = FLT_MAX;
+		for (int x = 0; x < m_noGrid; ++x)
+		{
+			float xCentre = m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f;
+			float offSet = fabs(xCentre - posX);
+			if (offSet < dist)
+			{
+				xIndex = x;
+				dist = offSet;
+			}
+		}
+		dist = FLT_MAX;
+		for (int y = 0; y < m_noGrid; ++y)
+		{
+			float yCentre;
+			if (xIndex % 2) //odd 
+				yCentre = m_gridSize * y + m_gridOffset + m_gridSize * 0.5f;
+			else
+				yCentre = m_gridSize * y + m_gridOffset;
+			float offSet = fabs(yCentre - posY);
+			if (offSet < dist)
+			{
+				yIndex = y;
+				dist = offSet;
+			}
+		}
+
+		m_myGrid[yIndex * m_noGrid + xIndex] = m_maze.m_grid[yIndex * m_noGrid + xIndex] = Maze::TILE_MUD;
 	}
 	else if (bRButtonState && !Application::IsMousePressed(1))
 	{
 		bRButtonState = false;
 		std::cout << "RBUTTON UP" << std::endl;
 	}
+
+	static bool bFState = false;
+	if (!bFState && Application::IsKeyPressed('F'))
+	{
+		bFState = true;
+		std::cout << "RBUTTON DOWN" << std::endl;
+		double x, y;
+		Application::GetCursorPos(&x, &y);
+		int w = Application::GetWindowWidth();
+		int h = Application::GetWindowHeight();
+		float posX = static_cast<float>(x) / w * m_worldWidth;
+		float posY = (h - static_cast<float>(y)) / h * m_worldHeight;
+		int xIndex;
+		int yIndex;
+		float dist = FLT_MAX;
+		for (int x = 0; x < m_noGrid; ++x)
+		{
+			float xCentre = m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f;
+			float offSet = fabs(xCentre - posX);
+			if (offSet < dist)
+			{
+				xIndex = x;
+				dist = offSet;
+			}
+		}
+		dist = FLT_MAX;
+		for (int y = 0; y < m_noGrid; ++y)
+		{
+			float yCentre;
+			if (xIndex % 2) //odd 
+				yCentre = m_gridSize * y + m_gridOffset + m_gridSize * 0.5f;
+			else
+				yCentre = m_gridSize * y + m_gridOffset;
+			float offSet = fabs(yCentre - posY);
+			if (offSet < dist)
+			{
+				yIndex = y;
+				dist = offSet;
+			}
+		}
+
+		m_myGrid[yIndex * m_noGrid + xIndex] = m_maze.m_grid[yIndex * m_noGrid + xIndex] = Maze::TILE_WATER;
+	}
+	else if (bFState && !Application::IsKeyPressed('F'))
+	{
+		bFState = false;
+		std::cout << "RBUTTON UP" << std::endl;
+	}
+
 	static bool bSpaceState = false;
 	if (!bSpaceState && Application::IsKeyPressed(VK_SPACE))
 	{
@@ -1000,7 +1085,7 @@ void SceneTurn::Update(double dt)
 					{
 						if (go->path[x].x == go->curr.x && go->path[x].y == go->curr.y)
 						{
-							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_EMPTY;
+							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x];
 							go->curr = go->path[x + 1];
 							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 							break;
@@ -1145,6 +1230,12 @@ void SceneTurn::Render()
 				break;
 			case Maze::TILE_EMPTY:
 				RenderMesh(meshList[GEO_HEXWHITE], false);
+				break;
+			case Maze::TILE_WATER:
+				RenderMesh(meshList[GEO_WATER], false);
+				break;
+			case Maze::TILE_MUD:
+				RenderMesh(meshList[GEO_MUD], false);
 				break;
 			}
 			modelStack.PopMatrix();
