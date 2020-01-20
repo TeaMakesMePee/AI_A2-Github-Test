@@ -78,6 +78,7 @@ public:
 		GEO_WATER,
 		GEO_MUD,
 		GEO_K9,
+		GEO_BORDER,
 		NUM_GEOMETRY,
 	};
 public:

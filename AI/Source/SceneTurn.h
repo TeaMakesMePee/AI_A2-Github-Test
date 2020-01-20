@@ -61,7 +61,16 @@ protected:
 	int m_turn;
 	double timer;
 
-	GameObject* test;
+	GameObject* target;
+
+	//To keep track of whose turn
+	bool botsideTurn;
+
+	//List of bottom side players
+	std::vector<GameObject*> botsideList;
+
+	//List of top side players
+	std::vector<GameObject*> topsideList;
 };
 
 #endif

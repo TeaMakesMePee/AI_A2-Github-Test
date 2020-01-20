@@ -180,6 +180,10 @@ void SceneBase::Init()
 	meshList[GEO_K9] = MeshBuilder::GenerateQuad("k9", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_K9]->textureID = LoadTGA("Image//hexk9.tga");
 
+	//Border
+	meshList[GEO_BORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_BORDER]->textureID = LoadTGA("Image//hexborder.tga");
+
 	bLightEnabled = false;
 }
 

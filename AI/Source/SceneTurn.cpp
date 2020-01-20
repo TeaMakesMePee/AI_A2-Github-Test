@@ -51,6 +51,7 @@ void SceneTurn::Init()
 	m_myGrid[m_start.y * m_noGrid + m_start.x] = Maze::TILE_EMPTY;
 	DFS(m_start);
 	m_rightOffset = 48.f;
+	botsideTurn = true;
 	//im just testing out some stuff
 }
 
@@ -917,36 +918,9 @@ void SceneTurn::Update(double dt)
 				dist = offSet;
 			}
 		}
-
-		std::cout << "x pos: " << xIndex << ", y pos: " << yIndex << std::endl;
-
 		m_end.Set(xIndex, yIndex);
-		for (auto go : m_goList)
-		{
-			if (!go->active)
-				return;
-			//BFSLimit(go, m_end, m_noGrid * m_noGrid);
-			AStar(go, m_end);
-		}
-
-		//if (posX < m_noGrid * m_gridSize && posY < m_noGrid * m_gridSize)
-		//{
-		//	m_end.Set(xIndex, yIndex);
-		//	for (auto go : m_goList)
-		//	{
-		//		if (go->type != GameObject::GO_NPC)
-		//			return;
-		//		if (!go->active)
-		//			return;
-		//		BFSLimit(go, m_end, 20);
-		//		std::cout << "Path:";
-		//		for (auto tile : go->path)
-		//		{
-		//			std::cout << "(" << tile.x << "," << tile.y << ")";
-		//		}
-		//		std::cout << std::endl;
-		//	}
-		//}
+		if (target)
+			AStar(target, m_end);
 	}
 	else if (bLButtonState && !Application::IsMousePressed(0))
 	{
@@ -1072,10 +1046,53 @@ void SceneTurn::Update(double dt)
 		}
 		go->stack.push_back(go->curr);
 		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+
+		botsideList.push_back(go);
+		target = go;
 	}
 	else if (bSpaceState && !Application::IsKeyPressed(VK_SPACE))
 	{   
 		bSpaceState = false;
+	}
+
+	static bool bRightState = false;
+	if (!bRightState && Application::IsKeyPressed(VK_RIGHT))
+	{
+		bSpaceState = true;
+		std::vector<GameObject*> ListCopy = (botsideTurn ? botsideList : topsideList);
+		for (int x = 0; x < ListCopy.size(); ++x)
+		{
+			if (ListCopy[x] == target)
+			{
+				if (x + 1 < ListCopy.size())
+					target = ListCopy[x + 1];
+				break;
+			}
+		}
+	}
+	else if (bRightState && !Application::IsKeyPressed(VK_RIGHT))
+	{
+		bRightState = false;
+	}
+
+	static bool bLeftState = false;
+	if (!bLeftState && Application::IsKeyPressed(VK_LEFT))
+	{
+		bLeftState = true;
+		std::vector<GameObject*> ListCopy = (botsideTurn ? botsideList : topsideList);
+		for (int x = 0; x < ListCopy.size(); ++x)
+		{
+			if (ListCopy[x] == target)
+			{
+				if (x - 1 > -1)
+					target = ListCopy[x - 1];
+				break;
+			}
+		}
+	}
+	else if (bLeftState && !Application::IsKeyPressed(VK_LEFT))
+	{
+		bLeftState = false;
 	}
 
 	timer += m_speed * dt;
@@ -1115,7 +1132,7 @@ void SceneTurn::Update(double dt)
 			//{
 				//DFSOnce(go);
 			//}
-			UpdateVisibleTiles(go, go->curr, go->visRadius);
+			
 		}
 	}
 
@@ -1228,6 +1245,11 @@ void SceneTurn::Render()
 
 	//RenderMesh(meshList[GEO_AXES], false);
 
+	if (target)
+	{
+		UpdateVisibleTiles(target, target->curr, target->visRadius);
+	}
+
 	//Rendering of map
 	for (int y = 0; y < m_noGrid; ++y)
 	{
@@ -1280,8 +1302,20 @@ void SceneTurn::Render()
 	//Rendering of GOs
 	for (auto go : m_goList)
 	{
+		if (!m_visible[go->curr.y * m_noGrid + go->curr.x])
+			continue;
 		if (go->active)
 			RenderGO(go);
+	}
+
+	//Render Target Border
+	if (target)
+	{
+		modelStack.PushMatrix();
+		modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * target->curr.x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * target->curr.y + m_gridOffset + ((target->curr.x % 2) ? m_gridSize * 0.5f : 0), 0);
+		modelStack.Scale(m_gridSize * appliedXScale * 1.2f, m_gridSize * 1.2f, m_gridSize * 1.2f);
+		RenderMesh(meshList[GEO_BORDER], false);
+		modelStack.PopMatrix();
 	}
 
 	//On screen text
