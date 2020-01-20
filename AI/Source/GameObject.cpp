@@ -1,9 +1,13 @@
 
 #include "GameObject.h"
 
-GameObject::GameObject(int size, GAMEOBJECT_TYPE typeValue)
-	: inventorySize(size),
-	type(typeValue),
+bool GameObject::Handle(Message* message)
+{
+	return false;
+}
+
+GameObject::GameObject(GAMEOBJECT_TYPE typeValue)
+	: type(typeValue),
 	scale(1, 1, 1),
 	active(false),
 	mass(1.f)

@@ -77,6 +77,7 @@ public:
 		GEO_FOOD,
 		GEO_WATER,
 		GEO_MUD,
+		GEO_K9,
 		NUM_GEOMETRY,
 	};
 public:

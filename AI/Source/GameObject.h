@@ -4,6 +4,8 @@
 #include "Vector3.h"
 #include "Maze.h"
 #include <queue>
+#include "StateMachine.h"
+#include "ObjectBase.h"
 
 struct GameObject
 {
@@ -45,6 +47,8 @@ struct GameObject
 	int visRadius;
 	std::vector<int> visIndexes;
 
+	StateMachine* sm;
+
 	//GameObject Stats
 	float health;
 	float damage;
@@ -53,7 +57,9 @@ struct GameObject
 	int inventorySize;
 	std::vector<Maze::LOOT_TYPE> inventoryList;
 
-	GameObject(int size, GAMEOBJECT_TYPE typeValue = GO_BALL);
+	virtual bool Handle(Message* message);
+
+	GameObject(GAMEOBJECT_TYPE typeValue = GO_BALL);
 	~GameObject();
 };
 

@@ -22,7 +22,7 @@ public:
 	void RenderLoot(int index, Maze::LOOT_TYPE type);
 	void UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius);
 
-	GameObject* FetchGO();
+	GameObject* FetchGO(GameObject::GAMEOBJECT_TYPE type);
 
 	void DFS(MazePt curr);
 	bool BFS(MazePt start, MazePt end);
@@ -32,7 +32,7 @@ public:
 
 	bool AStar(GameObject* go, MazePt end);
 
-
+	void SetUnitStats(GameObject* go);
 protected:
 
 	std::vector<GameObject *> m_goList;

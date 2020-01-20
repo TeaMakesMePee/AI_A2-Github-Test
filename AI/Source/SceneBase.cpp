@@ -176,6 +176,10 @@ void SceneBase::Init()
 	meshList[GEO_HEXBLACK] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_HEXBLACK]->textureID = LoadTGA("Image//hexblack.tga");
 
+	//Units
+	meshList[GEO_K9] = MeshBuilder::GenerateQuad("k9", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_K9]->textureID = LoadTGA("Image//hexk9.tga");
+
 	bLightEnabled = false;
 }
 

@@ -4,6 +4,9 @@
 #include <sstream>
 #include <list>
 
+#include "StateMachine.h"
+#include "StatesGeneric.h"
+
 SceneTurn::SceneTurn()
 {
 }
@@ -51,24 +54,31 @@ void SceneTurn::Init()
 	//im just testing out some stuff
 }
 
-GameObject* SceneTurn::FetchGO()
+GameObject* SceneTurn::FetchGO(GameObject::GAMEOBJECT_TYPE type)
 {
-	for (std::vector<GameObject *>::iterator it = m_goList.begin(); it != m_goList.end(); ++it)
+	for (std::vector<GameObject*>::iterator it = m_goList.begin(); it != m_goList.end(); ++it)
 	{
-		GameObject *go = (GameObject *)*it;
-		if (!go->active)
+		GameObject* go = (GameObject*)*it;
+		if (!go->active && go->type == type)
 		{
 			go->active = true;
-			++m_objectCount;
 			return go;
 		}
 	}
-	for (unsigned i = 0; i < 10; ++i)
+	for (unsigned i = 0; i < 5; ++i)
 	{
-		GameObject *go = new GameObject(1, GameObject::GO_NONE);
+		GameObject* go = new GameObject(type);
 		m_goList.push_back(go);
+		if (type == GameObject::GO_K9)
+		{
+			go->sm = new StateMachine();
+			go->sm->AddState(new StateIdle("Idle", go));
+			go->sm->AddState(new StateMove("Move", go));
+			go->sm->AddState(new StateAttack("Attack", go));
+			go->sm->AddState(new StateDead("Dead", go));
+		}
 	}
-	return FetchGO();
+	return FetchGO(type);
 }
 
 void SceneTurn::DFS(MazePt curr)
@@ -823,6 +833,19 @@ bool SceneTurn::AStar(GameObject* go, MazePt end)
 	return false;
 }
 
+void SceneTurn::SetUnitStats(GameObject* go)
+{
+	switch (go->type)
+	{
+	case GameObject::GO_K9:
+		go->visRadius = 3;
+		go->health = 100.f;
+		go->damage = 20.f;
+		go->inventorySize = 0;
+		break;
+	}
+}
+
 void SceneTurn::Update(double dt)
 {
 	
@@ -900,8 +923,6 @@ void SceneTurn::Update(double dt)
 		m_end.Set(xIndex, yIndex);
 		for (auto go : m_goList)
 		{
-			if (go->type != GameObject::GO_NPC)
-				return;
 			if (!go->active)
 				return;
 			//BFSLimit(go, m_end, m_noGrid * m_noGrid);
@@ -1032,13 +1053,12 @@ void SceneTurn::Update(double dt)
 	if (!bSpaceState && Application::IsKeyPressed(VK_SPACE))
 	{
 		bSpaceState = true;
-		GameObject *go = FetchGO();
+		GameObject *go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+		SetUnitStats(go);
 		go->grid.resize(m_noGrid * m_noGrid);
 		go->visited.resize(m_noGrid * m_noGrid);
 		go->aGlobal.resize(m_noGrid * m_noGrid);
 		go->aLocal.resize(m_noGrid* m_noGrid);
-		go->type = GameObject::GO_NPC;
-		go->visRadius = 1;
 		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
 		std::fill(go->visited.begin(), go->visited.end(), false);
 		//set go->curr to an empty tile
@@ -1067,8 +1087,6 @@ void SceneTurn::Update(double dt)
 		std::fill(m_visible.begin(), m_visible.end(), false);
 		for (auto go : m_goList)
 		{
-			if (go->type != GameObject::GO_NPC)
-				return;
 			if (!go->active)
 				return;
 			go->visIndexes.clear();
@@ -1126,8 +1144,8 @@ void SceneTurn::RenderGO(GameObject *go)
 	modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
 	switch (go->type)
 	{
-	case GameObject::GO_NPC: //Render GO_NPC
-		RenderMesh(meshList[GEO_HEXGO], false);
+	case GameObject::GO_K9: //Render GO_NPC
+		RenderMesh(meshList[GEO_K9], false);
 		break;
 	}
 	modelStack.PopMatrix();
@@ -1215,8 +1233,8 @@ void SceneTurn::Render()
 	{
 		for (int x = 0; x < m_noGrid; ++x)
 		{
-			//if (!m_visible[y * m_noGrid + x])
-				//continue;
+			if (!m_visible[y * m_noGrid + x])
+				continue;
 			modelStack.PushMatrix();
 			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * y + m_gridOffset + ((x % 2) ? m_gridSize * 0.5f : 0), 0);
 			modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
@@ -1254,13 +1272,16 @@ void SceneTurn::Render()
 	//Rendering of Loot
 	for (auto loot : m_maze.m_loot)
 	{
+		if (!m_visible[loot->index])
+			continue;
 		RenderLoot(loot->index, loot->type);
 	}
 
 	//Rendering of GOs
 	for (auto go : m_goList)
 	{
-		RenderGO(go);
+		if (go->active)
+			RenderGO(go);
 	}
 
 	//On screen text
