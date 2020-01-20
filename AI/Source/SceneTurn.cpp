@@ -1336,6 +1336,28 @@ void SceneTurn::Render()
 	ss.str("");											   					 
 	ss << "Turn Maze " << m_mazeKey;					   					 
 	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 0);
+
+	if (target)
+	{
+		std::string name;
+		switch (target->type)
+		{
+		case GameObject::GO_K9:
+			name = "K9";
+		}
+
+		ss.str("");
+		ss << "Unit: " << name;
+		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 54);
+
+		ss.str("");
+		ss << "Health: " << target->health;
+		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 51);
+
+		ss.str("");
+		ss << "Damage: " << target->damage;
+		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 48);
+	}
 }
 
 void SceneTurn::Exit()
