@@ -13,7 +13,9 @@ struct GameObject
 		GO_BALL,
 		GO_CROSS,
 		GO_CIRCLE,
-		GO_NPC,
+		GO_GIANTSOLDIER,
+		GO_SOLDIER,
+		GO_K9,
 		GO_TOTAL, //must be last
 	};
 
