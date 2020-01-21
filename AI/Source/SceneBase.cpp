@@ -176,9 +176,11 @@ void SceneBase::Init()
 	meshList[GEO_HEXBLACK] = MeshBuilder::GenerateQuad("hex", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_HEXBLACK]->textureID = LoadTGA("Image//hexblack.tga");
 
-	//Units
+	//Units/Objects
 	meshList[GEO_K9] = MeshBuilder::GenerateQuad("k9", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_K9]->textureID = LoadTGA("Image//hexk9.tga");
+	meshList[GEO_MINE] = MeshBuilder::GenerateQuad("mine", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_MINE]->textureID = LoadTGA("Image//hexmine.tga");
 
 	//Border
 	meshList[GEO_BORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);

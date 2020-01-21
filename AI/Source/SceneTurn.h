@@ -82,6 +82,7 @@ protected:
 	double eventTime;
 	int lifeinTurns;
 	bool eventActive;
+	std::vector<GameObject*> mineList;
 };
 
 #endif

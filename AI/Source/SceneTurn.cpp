@@ -850,6 +850,10 @@ void SceneTurn::SetUnitStats(GameObject* go)
 		go->damage = 20.f;
 		go->inventorySize = 5;
 		break;
+	case GameObject::GO_MINE:
+		go->visRadius = 1;
+		go->health = 1.f;
+		break;
 	}
 }
 
@@ -866,6 +870,12 @@ void SceneTurn::GenerateEventBombs()
 	{
 		int random = Math::RandIntMinMax(0, EmptyTileIndex.size() - 1);
 		m_maze.m_grid[EmptyTileIndex[random]] = m_myGrid[EmptyTileIndex[random]] = Maze::TILE_MINE;
+		GameObject* mine = new GameObject(GameObject::GO_MINE);
+		mine->curr.x = EmptyTileIndex[random] % m_noGrid;
+		mine->curr.y = EmptyTileIndex[random] / m_noGrid;
+		mine->active = true;
+		SetUnitStats(mine);
+		mineList.push_back(mine);
 		EmptyTileIndex.erase(EmptyTileIndex.begin() + random);
 	}
 }
@@ -1187,6 +1197,9 @@ void SceneTurn::RenderGO(GameObject *go)
 	case GameObject::GO_K9: //Render GO_NPC
 		RenderMesh(meshList[GEO_K9], false);
 		break;
+	case GameObject::GO_MINE:
+		RenderMesh(meshList[GEO_MINE], false);
+		break;
 	}
 	modelStack.PopMatrix();
 }
@@ -1216,6 +1229,9 @@ void SceneTurn::RenderLoot(int index, Maze::LOOT_TYPE type)
 
 void SceneTurn::UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius)
 {
+	if (!m_visible[go->curr.y * m_noGrid + go->curr.x])
+		m_visible[go->curr.y * m_noGrid + go->curr.x] = true;
+
 	std::vector<MazePt> nextList;
 	const static int offset[][2] = { {0, 1}, {0, -1}, {1, 0}, {-1, 0}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1} };
 	for (int x = 0; x < 6; ++x)
@@ -1272,6 +1288,11 @@ void SceneTurn::Render()
 	{
 		target->visIndexes.clear();
 		UpdateVisibleTiles(target, target->curr, target->visRadius);
+		if (eventActive)
+		{
+			for (auto mine : mineList)
+				UpdateVisibleTiles(mine, mine->curr, mine->visRadius);
+		}
 	}
 
 	//Rendering of map
@@ -1306,15 +1327,6 @@ void SceneTurn::Render()
 		}
 	}
 
-	//Rendering of ghost
-	//int xCurr = m_maze.GetCurr().x;
-	//int yCurr = m_maze.GetCurr().y;
-	//modelStack.PushMatrix();
-	//modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * xCurr * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * yCurr + m_gridOffset + ((xCurr % 2) ? m_gridSize * 0.5f : 0), 0);
-	//modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
-	//RenderMesh(meshList[GEO_HEXGHOST], false);
-	//modelStack.PopMatrix();
-
 	//Rendering of Loot
 	for (auto loot : m_maze.m_loot)
 	{
@@ -1330,6 +1342,15 @@ void SceneTurn::Render()
 			continue;
 		if (go->active)
 			RenderGO(go);
+	}
+
+	//Rendering Mines
+	for (auto mine : mineList)
+	{
+		if (!m_visible[mine->curr.y * m_noGrid + mine->curr.x])
+			continue;
+		if (mine->active)
+			RenderGO(mine);
 	}
 
 	//Render Target Border
@@ -1389,7 +1410,7 @@ void SceneTurn::Render()
 		for (int x = 0; x < target->inventoryList.size(); ++x)
 		{
 			modelStack.PushMatrix();
-			modelStack.Translate(140.f + (5.f * x), 70.f, 0.f); 
+			modelStack.Translate(142.f + (5.f * x), 70.f, 0.f); 
 			modelStack.Scale(m_gridSize* appliedXScale * 1.5f, m_gridSize * 1.5f, m_gridSize * 1.5f);
 			switch (target->inventoryList[x])
 			{

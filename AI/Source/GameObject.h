@@ -18,6 +18,7 @@ struct GameObject
 		GO_GIANTSOLDIER,
 		GO_SOLDIER,
 		GO_K9,
+		GO_MINE,
 		GO_TOTAL, //must be last
 	};
 
