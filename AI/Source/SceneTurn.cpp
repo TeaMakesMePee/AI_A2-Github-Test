@@ -842,7 +842,7 @@ void SceneTurn::SetUnitStats(GameObject* go)
 		go->visRadius = 3;
 		go->health = 100.f;
 		go->damage = 20.f;
-		go->inventorySize = 0;
+		go->inventorySize = 5;
 		break;
 	}
 }
@@ -1357,6 +1357,33 @@ void SceneTurn::Render()
 		ss.str("");
 		ss << "Damage: " << target->damage;
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 48);
+
+		ss.str("");
+		ss << "Inventory: " << target->inventoryList.size() << "/" << target->inventorySize;
+		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 45);
+
+		for (int x = 0; x < target->inventoryList.size(); ++x)
+		{
+			modelStack.PushMatrix();
+			modelStack.Translate(140.f + (5.f * x), 70.f, 0.f); 
+			modelStack.Scale(m_gridSize* appliedXScale * 1.5f, m_gridSize * 1.5f, m_gridSize * 1.5f);
+			switch (target->inventoryList[x])
+			{
+			case Maze::LOOT_DMGBOOST:
+				RenderMesh(meshList[GEO_DMGBOOST], false);
+				break;
+			case Maze::LOOT_DRUG:
+				RenderMesh(meshList[GEO_DRUG], false);
+				break;
+			case Maze::LOOT_FOOD:
+				RenderMesh(meshList[GEO_FOOD], false);
+				break;
+			case Maze::LOOT_HPPACK:
+				RenderMesh(meshList[GEO_HPPACK], false);
+				break;
+			}
+			modelStack.PopMatrix();
+		}
 	}
 }
 
