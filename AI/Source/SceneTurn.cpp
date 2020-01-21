@@ -1365,6 +1365,12 @@ void SceneTurn::Render()
 
 	//On screen text
 	std::ostringstream ss;
+
+	ss.precision(3);
+	ss.str("");
+	ss << "Elapsed Time: " << elapsedTime;
+	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 12);
+
 	ss.precision(3);
 	ss << "Speed:" << m_speed;
 	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 6);
