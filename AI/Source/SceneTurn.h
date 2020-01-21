@@ -33,6 +33,9 @@ public:
 	bool AStar(GameObject* go, MazePt end);
 
 	void SetUnitStats(GameObject* go);
+	
+	//Event related
+	void GenerateEventBombs();
 protected:
 
 	std::vector<GameObject *> m_goList;
@@ -71,6 +74,14 @@ protected:
 
 	//List of top side players
 	std::vector<GameObject*> topsideList;
+
+	//To keep track of elapsed time
+	double elapsedTime;
+
+	//Event related
+	double eventTime;
+	int lifeinTurns;
+	bool eventActive;
 };
 
 #endif

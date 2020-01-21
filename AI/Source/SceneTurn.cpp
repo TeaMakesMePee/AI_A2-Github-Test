@@ -53,6 +53,12 @@ void SceneTurn::Init()
 	m_rightOffset = 48.f;
 	botsideTurn = true;
 	//im just testing out some stuff
+
+
+	//Init event variables
+	eventTime = static_cast<double>(Math::RandFloatMinMax(30.f, 60.f));
+	eventActive = false;
+	lifeinTurns = 5;
 }
 
 GameObject* SceneTurn::FetchGO(GameObject::GAMEOBJECT_TYPE type)
@@ -847,10 +853,34 @@ void SceneTurn::SetUnitStats(GameObject* go)
 	}
 }
 
+void SceneTurn::GenerateEventBombs()
+{
+	std::vector<int> EmptyTileIndex;
+	for (int x = 0; x < m_maze.m_grid.size(); ++x)
+	{
+		if (m_maze.m_grid[x] == Maze::TILE_EMPTY)
+			EmptyTileIndex.push_back(x);
+	}
+
+	for (int x = 0; x < 5; ++x)
+	{
+		int random = Math::RandIntMinMax(0, EmptyTileIndex.size() - 1);
+		m_maze.m_grid[EmptyTileIndex[random]] = m_myGrid[EmptyTileIndex[random]] = Maze::TILE_MINE;
+		EmptyTileIndex.erase(EmptyTileIndex.begin() + random);
+	}
+}
+
 void SceneTurn::Update(double dt)
 {
 	
 	SceneBase::Update(dt);
+	elapsedTime += dt;
+
+	if (elapsedTime >= eventTime && !eventActive)
+	{
+		eventActive = true;
+		GenerateEventBombs();
+	}
 
 	//Calculating aspect ratio
 	m_worldHeight = 100.f;
@@ -1106,7 +1136,6 @@ void SceneTurn::Update(double dt)
 		{
 			if (!go->active)
 				return;
-			go->visIndexes.clear();
 			if (!go->path.empty())
 			{
 				for (int x = 0; x < go->path.size(); ++x)
@@ -1114,7 +1143,6 @@ void SceneTurn::Update(double dt)
 					if (x == go->path.size() - 1)
 					{
 						go->path.clear();
-						//DFSOnce(go);
 					}
 					else
 					{
@@ -1128,11 +1156,6 @@ void SceneTurn::Update(double dt)
 					}
 				}
 			}
-			//else
-			//{
-				//DFSOnce(go);
-			//}
-			
 		}
 	}
 
@@ -1247,6 +1270,7 @@ void SceneTurn::Render()
 
 	if (target)
 	{
+		target->visIndexes.clear();
 		UpdateVisibleTiles(target, target->curr, target->visRadius);
 	}
 
