@@ -2,6 +2,8 @@
 #include <iostream>
 #include "MyMath.h"
 #include "Application.h"
+#include <fstream>
+#include <string>
 
 Maze::Maze()
 {
@@ -24,32 +26,34 @@ void Maze::Generate(unsigned key, unsigned size, MazePt start, float wallLoad)
 	std::fill(m_grid.begin(), m_grid.end(), TILE_EMPTY);
 	unsigned startId = start.y * size + start.x;
 	srand(time(NULL));
-	for (int i = 0; i < (int)total * wallLoad;)
-	{
-		unsigned chosen = rand() % total;
-		if (chosen == startId)
-			continue;
-		if (m_grid[chosen] == TILE_EMPTY)
-		{
-			m_grid[chosen] = TILE_WALL;
-			++i;
-		}
-	}
-	//std::cout << "Maze " << key << std::endl;
-	for (int row = (int)size - 1; row >= 0; --row)
-	{
-		for (int col = 0; col < (int)size; ++col)
-		{
-			if (m_grid[row * size + col] == TILE_WALL)
-				std::cout << "1 ";
-			else
-				std::cout << "0 ";
-		}
-		std::cout << std::endl;
-	}
+	//for (int i = 0; i < (int)total * wallLoad;)
+	//{
+	//	unsigned chosen = rand() % total;
+	//	if (chosen == startId)
+	//		continue;
+	//	if (m_grid[chosen] == TILE_EMPTY)
+	//	{
+	//		//m_grid[chosen] = TILE_WALL;
+	//		m_grid[chosen] = TILE_EMPTY;
+	//		++i;
+	//	}
+	//}
+	////std::cout << "Maze " << key << std::endl;
+	//for (int row = (int)size - 1; row >= 0; --row)
+	//{
+	//	for (int col = 0; col < (int)size; ++col)
+	//	{
+	//		if (m_grid[row * size + col] == TILE_WALL)
+	//			std::cout << "1 ";
+	//		else
+	//			std::cout << "0 ";
+	//	}
+	//	std::cout << std::endl;
+	//}
 	m_key = key;
 	m_size = size;
 	m_numMove = 0;
+	ReadMaze();
 }
 
 void Maze::GenerateLoot(float lootLoad)
@@ -125,6 +129,35 @@ void Maze::SetCurr(MazePt newCurr)
 void Maze::SetNumMove(int num)
 {
 	m_numMove = num;
+}
+
+void Maze::ReadMaze()
+{
+	std::string line, file;
+	int rand = Math::RandIntMinMax(1, 3);
+	if (rand == 1)
+		file = "Map1.txt";
+	else if (rand == 2)
+		file = "Map2.txt";
+	else if (rand == 3)
+		file = "Map3.txt";
+	std::ifstream myfile(file);
+	int row = 0;
+	if (myfile.is_open())
+	{
+		while (getline(myfile, line))
+		{
+			for (int x = 0; x < line.size(); ++x)
+			{
+				if (line[x] == '0')
+					m_grid[row * m_size + x] = Maze::TILE_EMPTY;
+				else if (line[x] == '1')
+					m_grid[row * m_size + x] = Maze::TILE_WALL;
+			}
+			row++;
+		}
+		myfile.close();
+	}
 }
 
 Maze::TILE_CONTENT Maze::See(MazePt tile)

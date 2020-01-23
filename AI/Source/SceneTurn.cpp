@@ -6,6 +6,7 @@
 
 #include "StateMachine.h"
 #include "StatesGeneric.h"
+#include <fstream>
 
 SceneTurn::SceneTurn()
 {
@@ -1007,7 +1008,7 @@ void SceneTurn::Update(double dt)
 			}
 		}
 
-		m_myGrid[yIndex * m_noGrid + xIndex] = m_maze.m_grid[yIndex * m_noGrid + xIndex] = Maze::TILE_MUD;
+		m_myGrid[yIndex * m_noGrid + xIndex] = m_maze.m_grid[yIndex * m_noGrid + xIndex] = Maze::TILE_WALL;
 	}
 	else if (bRButtonState && !Application::IsMousePressed(1))
 	{
@@ -1055,7 +1056,7 @@ void SceneTurn::Update(double dt)
 			}
 		}
 
-		m_myGrid[yIndex * m_noGrid + xIndex] = m_maze.m_grid[yIndex * m_noGrid + xIndex] = Maze::TILE_WATER;
+		m_myGrid[yIndex * m_noGrid + xIndex] = m_maze.m_grid[yIndex * m_noGrid + xIndex] = Maze::TILE_EMPTY;
 	}
 	else if (bFState && !Application::IsKeyPressed('F'))
 	{
@@ -1366,11 +1367,12 @@ void SceneTurn::Render()
 	//On screen text
 	std::ostringstream ss;
 
-	ss.precision(3);
 	ss.str("");
+	ss.precision(3);
 	ss << "Elapsed Time: " << elapsedTime;
 	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 12);
 
+	ss.str("");
 	ss.precision(3);
 	ss << "Speed:" << m_speed;
 	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 6);

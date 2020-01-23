@@ -59,6 +59,7 @@ public:
 	int GetNumMove();
 	void SetCurr(MazePt newCurr);
 	void SetNumMove(int num);
+	void ReadMaze();
 
 	TILE_CONTENT See(MazePt tile);
 	std::vector<TILE_CONTENT> m_grid; //move from private

@@ -36,6 +36,7 @@ public:
 	
 	//Event related
 	void GenerateEventBombs();
+
 protected:
 
 	std::vector<GameObject *> m_goList;
