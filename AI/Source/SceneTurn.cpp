@@ -327,6 +327,14 @@ void SceneTurn::DFSOnce(GameObject* go)
 	go->stack.push_back(go->curr);
 	go->visited[go->curr.y * m_noGrid + go->curr.x] = true;
 
+	std::vector<MazePt> nextList;
+	const static int offset[][2] = { {0, 1}, {0, -1}, {1, 0}, {-1, 0}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1} };
+
+	for (int x = 0; x < 6; ++x)
+	{
+
+	}
+
 	//check if up is visited
 	if (go->curr.y + 1 < m_noGrid)
 	{
