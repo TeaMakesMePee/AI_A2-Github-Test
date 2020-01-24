@@ -47,13 +47,14 @@ struct GameObject
 
 	int visRadius;
 	std::vector<int> visIndexes;
-
 	StateMachine* sm;
 
 	//GameObject Stats
 	float health;
 	float damage;
-	float speed;
+
+	//Turn
+	bool turnOver;
 	
 	int inventorySize;
 	std::vector<Maze::LOOT_TYPE> inventoryList;

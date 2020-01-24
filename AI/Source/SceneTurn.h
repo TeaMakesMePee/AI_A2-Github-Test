@@ -37,6 +37,12 @@ public:
 	//Event related
 	void GenerateEventBombs();
 
+	//AI Decision
+	void GetAIDecision(GameObject* go);
+
+	//Set Up Game Units
+	void SetUnits();
+
 protected:
 
 	std::vector<GameObject *> m_goList;

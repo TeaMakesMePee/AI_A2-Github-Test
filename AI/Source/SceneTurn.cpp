@@ -39,9 +39,9 @@ void SceneTurn::Init()
 	m_start.Set(0, 0);
 	m_mazeKey = 0;
 	m_wallLoad = 0.3f;
+
 	m_maze.Generate(m_mazeKey, m_noGrid, m_start, m_wallLoad); //Generate new maze
-	m_maze.GenerateTiles(0.1f);
-	m_maze.GenerateLoot(0.045f);
+
 	m_myGrid.resize(m_noGrid * m_noGrid);
 	m_visited.resize(m_noGrid * m_noGrid);
 	m_visible.resize(m_noGrid * m_noGrid);
@@ -51,6 +51,12 @@ void SceneTurn::Init()
 	std::fill(m_visible.begin(), m_visible.end(), false);
 	m_myGrid[m_start.y * m_noGrid + m_start.x] = Maze::TILE_EMPTY;
 	DFS(m_start);
+
+	SetUnits();
+
+	m_maze.GenerateTiles(0.1f);
+	m_maze.GenerateLoot(0.045f);
+
 	m_rightOffset = 48.f;
 	botsideTurn = true;
 	//im just testing out some stuff
@@ -915,9 +921,51 @@ void SceneTurn::GenerateEventBombs()
 	}
 }
 
+void SceneTurn::GetAIDecision(GameObject* go)
+{
+	//Check if any enemies adjacent, if so, attack
+	//Check if any loot or enemy in range but not adjacent, then move there
+	//Dfs if theres nothing in vis range
+}
+
+void SceneTurn::SetUnits()
+{
+	for (int x = 388; x < 393; ++x)
+	{
+		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+		SetUnitStats(go);
+		go->grid.resize(m_noGrid * m_noGrid);
+		go->visited.resize(m_noGrid * m_noGrid);
+		go->aGlobal.resize(m_noGrid * m_noGrid);
+		go->aLocal.resize(m_noGrid * m_noGrid);
+		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
+		std::fill(go->visited.begin(), go->visited.end(), false);
+		go->curr.Set(x, 0);
+		go->stack.push_back(go->curr);
+		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+		topsideList.push_back(go);
+	}
+
+	for (int x = 8; x < 13; ++x)
+	{
+		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+		SetUnitStats(go);
+		go->grid.resize(m_noGrid * m_noGrid);
+		go->visited.resize(m_noGrid * m_noGrid);
+		go->aGlobal.resize(m_noGrid * m_noGrid);
+		go->aLocal.resize(m_noGrid * m_noGrid);
+		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
+		std::fill(go->visited.begin(), go->visited.end(), false);
+		go->curr.Set(x, 0);
+		go->stack.push_back(go->curr);
+		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+		botsideList.push_back(go);
+		target = go;
+	}
+}
+
 void SceneTurn::Update(double dt)
 {
-	
 	SceneBase::Update(dt);
 	elapsedTime += dt;
 
@@ -1170,41 +1218,76 @@ void SceneTurn::Update(double dt)
 		bLeftState = false;
 	}
 
+	//Swap to other side/opponent
+	//Choose one of the side's unit (maybe make a function to choose)
+
+	if (target)
+	{
+		std::fill(m_visible.begin(), m_visible.end(), false);
+		target->visIndexes.clear();
+		UpdateVisibleTiles(target, target->curr, target->visRadius);
+		if (eventActive)
+		{
+			for (auto mine : mineList)
+				UpdateVisibleTiles(mine, mine->curr, mine->visRadius);
+		}
+	}
+
+	//Call GetAIDecision() to decide 
+	//Set state
+	//Update FSM
+
 	timer += m_speed * dt;
 	static const float TURN_TIME = 0.25f;
-	if (timer > TURN_TIME)
-	{
-		m_turn++;
-		timer = 0.0;
-		std::fill(m_visible.begin(), m_visible.end(), false);
-		for (auto go : m_goList)
+	//if (timer > TURN_TIME)
+	//{
+		//timer = 0.0;
+		//for (auto go : m_goList)
+		//{
+			//if (!go->active)
+				//return;
+		if (target)
 		{
-			if (!go->active)
-				return;
-			if (!go->path.empty())
+			if (!target->turnOver)
 			{
-				for (int x = 0; x < go->path.size(); ++x)
+				if (timer > TURN_TIME)
 				{
-					if (x == go->path.size() - 1)
+					timer = 0.0;
+					if (!target->path.empty())
 					{
-						go->path.clear();
+						for (int x = 0; x < target->path.size(); ++x)
+						{
+							if (x == target->path.size() - 1)
+							{
+								target->path.clear();
+								m_turn++;
+								target->turnOver = true;
+							}
+							else
+							{
+								if (target->path[x].x == target->curr.x && target->path[x].y == target->curr.y)
+								{
+									m_myGrid[target->curr.y * m_noGrid + target->curr.x] = m_maze.m_grid[target->curr.y * m_noGrid + target->curr.x];
+									target->curr = target->path[x + 1];
+									m_myGrid[target->curr.y * m_noGrid + target->curr.x] = Maze::TILE_PLAYER;
+									break;
+								}
+							}
+						}
 					}
 					else
 					{
-						if (go->path[x].x == go->curr.x && go->path[x].y == go->curr.y)
-						{
-							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x];
-							go->curr = go->path[x + 1];
-							m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
-							break;
-						}
+						GetAIDecision(target);
+						DFSOnce(target);
+						target->turnOver = false;
 					}
 				}
 			}
 		}
-	}
+		//}
+	//}
 
-	//Check of GO has picked up Loot
+	//Check if GO has picked up Loot
 	for (auto go : m_goList)
 	{
 		int goIndex = go->curr.y * m_noGrid + go->curr.x;
@@ -1319,24 +1402,24 @@ void SceneTurn::Render()
 
 	//RenderMesh(meshList[GEO_AXES], false);
 
-	if (target)
-	{
-		target->visIndexes.clear();
-		UpdateVisibleTiles(target, target->curr, target->visRadius);
-		if (eventActive)
-		{
-			for (auto mine : mineList)
-				UpdateVisibleTiles(mine, mine->curr, mine->visRadius);
-		}
-	}
+	//if (target)
+	//{
+		//target->visIndexes.clear();
+		//UpdateVisibleTiles(target, target->curr, target->visRadius);
+		//if (eventActive)
+		//{
+		//	for (auto mine : mineList)
+		//		UpdateVisibleTiles(mine, mine->curr, mine->visRadius);
+		//}
+	//}
 
 	//Rendering of map
 	for (int y = 0; y < m_noGrid; ++y)
 	{
 		for (int x = 0; x < m_noGrid; ++x)
 		{
-			if (!m_visible[y * m_noGrid + x])
-				continue;
+			//if (!m_visible[y * m_noGrid + x])
+				//continue;
 			modelStack.PushMatrix();
 			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * y + m_gridOffset + ((x % 2) ? m_gridSize * 0.5f : 0), 0);
 			modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
