@@ -332,133 +332,159 @@ void SceneTurn::DFSOnce(GameObject* go)
 
 	for (int x = 0; x < 6; ++x)
 	{
-
+		MazePt next;
+		if (x < 4)
+		{
+			next.x = go->curr.x + offset[x][0];
+			next.y = go->curr.y + offset[x][1];
+		}
+		else
+		{
+			next.x = go->curr.x + offset[x + ((go->curr.x % 2) ? 0 : 2)][0];
+			next.y = go->curr.y + offset[x + ((go->curr.x % 2) ? 0 : 2)][1];
+		}
+		nextList.push_back(next);
 	}
 
-	//check if up is visited
-	if (go->curr.y + 1 < m_noGrid)
+	std::random_shuffle(nextList.begin(), nextList.end());
+
+	for (int z = 0; z < nextList.size(); ++z)
 	{
-		if (!go->visited[(go->curr.y + 1) * m_noGrid + go->curr.x])
+		if (nextList[z].x < 0 || nextList[z].x >= m_noGrid || nextList[z].y < 0 || nextList[z].y >= m_noGrid)
+			continue;
+		if (go->visited[nextList[z].y * m_noGrid + nextList[z].x])
+			continue;
+		if (m_myGrid[nextList[z].y * m_noGrid + nextList[z].x] > -1)
 		{
-			go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x] = m_maze.See(MazePt(go->curr.x, go->curr.y + 1));
-			if (go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x] == Maze::TILE_EMPTY)
-			{
-				go->curr.y += 1;
-				return;
-			}
+			go->curr = nextList[z];
+			return;
 		}
 	}
 
-	//check if left is visited
-	if (go->curr.x - 1 > -1)
-	{
-		if (!go->visited[go->curr.y * m_noGrid + go->curr.x - 1])
-		{
-			go->grid[go->curr.y * m_noGrid + go->curr.x - 1] = m_maze.See(MazePt(go->curr.x - 1, go->curr.y));
-			if (go->grid[go->curr.y * m_noGrid + go->curr.x - 1] == Maze::TILE_EMPTY)
-			{
-				go->curr.x -= 1;
-				return;
-			}
-		}
-	}
+	////check if up is visited
+	//if (go->curr.y + 1 < m_noGrid)
+	//{
+	//	if (!go->visited[(go->curr.y + 1) * m_noGrid + go->curr.x])
+	//	{
+	//		go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x] = m_maze.See(MazePt(go->curr.x, go->curr.y + 1));
+	//		if (go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x] == Maze::TILE_EMPTY)
+	//		{
+	//			go->curr.y += 1;
+	//			return;
+	//		}
+	//	}
+	//}
 
-	//check if right is visited
-	if (go->curr.x + 1 < m_noGrid)
-	{
-		if (!go->visited[go->curr.y * m_noGrid + go->curr.x + 1])
-		{
-			go->grid[go->curr.y * m_noGrid + go->curr.x + 1] = m_maze.See(MazePt(go->curr.x + 1, go->curr.y));
-			if (go->grid[go->curr.y * m_noGrid + go->curr.x + 1] == Maze::TILE_EMPTY)
-			{
-				go->curr.x += 1;
-				return;
-			}
-		}
-	}
+	////check if left is visited
+	//if (go->curr.x - 1 > -1)
+	//{
+	//	if (!go->visited[go->curr.y * m_noGrid + go->curr.x - 1])
+	//	{
+	//		go->grid[go->curr.y * m_noGrid + go->curr.x - 1] = m_maze.See(MazePt(go->curr.x - 1, go->curr.y));
+	//		if (go->grid[go->curr.y * m_noGrid + go->curr.x - 1] == Maze::TILE_EMPTY)
+	//		{
+	//			go->curr.x -= 1;
+	//			return;
+	//		}
+	//	}
+	//}
 
-	if (go->curr.x % 2) //if odd x 
-	{
-		//TOP LEFT 
-		if (go->curr.x - 1 > -1 && go->curr.y + 1 < m_noGrid)
-		{
-			//MazePt next(curr.x - 1, curr.y + 1);
-			if (!go->visited[(go->curr.y + 1) * m_noGrid + go->curr.x - 1])
-			{
-				go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x - 1] = m_maze.See(MazePt(go->curr.x - 1, go->curr.y + 1));
-				if (go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x - 1] == Maze::TILE_EMPTY)
-				{
-					go->curr.x -= 1;
-					go->curr.y += 1;
-					return;
-				}
-			}
-		}
+	////check if right is visited
+	//if (go->curr.x + 1 < m_noGrid)
+	//{
+	//	if (!go->visited[go->curr.y * m_noGrid + go->curr.x + 1])
+	//	{
+	//		go->grid[go->curr.y * m_noGrid + go->curr.x + 1] = m_maze.See(MazePt(go->curr.x + 1, go->curr.y));
+	//		if (go->grid[go->curr.y * m_noGrid + go->curr.x + 1] == Maze::TILE_EMPTY)
+	//		{
+	//			go->curr.x += 1;
+	//			return;
+	//		}
+	//	}
+	//}
 
-		//TOP RIGHT 
-		if (go->curr.x + 1 < m_noGrid && go->curr.y + 1 < m_noGrid)
-		{
-			//MazePt next(curr.x - 1, curr.y + 1);
-			if (!go->visited[(go->curr.y + 1) * m_noGrid + go->curr.x + 1])
-			{
-				go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x + 1] = m_maze.See(MazePt(go->curr.x + 1, go->curr.y + 1));
-				if (go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x + 1] == Maze::TILE_EMPTY)
-				{
-					go->curr.x += 1;
-					go->curr.y += 1;
-					return;
-				}
-			}
-		}
-	}
-	else //even x
-	{
-		//BOT LEFT 
-		if (go->curr.x - 1 > -1 && go->curr.y - 1 > -1)
-		{
-			//MazePt next(curr.x - 1, curr.y + 1);
-			if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x - 1])
-			{
-				go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x - 1] = m_maze.See(MazePt(go->curr.x - 1, go->curr.y - 1));
-				if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x - 1] == Maze::TILE_EMPTY)
-				{
-					go->curr.x -= 1;
-					go->curr.y -= 1;
-					return;
-				}
-			}
-		}
+	//if (go->curr.x % 2) //if odd x 
+	//{
+	//	//TOP LEFT 
+	//	if (go->curr.x - 1 > -1 && go->curr.y + 1 < m_noGrid)
+	//	{
+	//		//MazePt next(curr.x - 1, curr.y + 1);
+	//		if (!go->visited[(go->curr.y + 1) * m_noGrid + go->curr.x - 1])
+	//		{
+	//			go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x - 1] = m_maze.See(MazePt(go->curr.x - 1, go->curr.y + 1));
+	//			if (go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x - 1] == Maze::TILE_EMPTY)
+	//			{
+	//				go->curr.x -= 1;
+	//				go->curr.y += 1;
+	//				return;
+	//			}
+	//		}
+	//	}
 
-		//BOT RIGHT 
-		if (go->curr.x + 1 < m_noGrid && go->curr.y - 1 > -1)
-		{
-			//MazePt next(curr.x - 1, curr.y + 1);
-			if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x + 1])
-			{
-				go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x + 1] = m_maze.See(MazePt(go->curr.x + 1, go->curr.y - 1));
-				if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x + 1] == Maze::TILE_EMPTY)
-				{
-					go->curr.x += 1;
-					go->curr.y -= 1;
-					return;
-				}
-			}
-		}
-	}
+	//	//TOP RIGHT 
+	//	if (go->curr.x + 1 < m_noGrid && go->curr.y + 1 < m_noGrid)
+	//	{
+	//		//MazePt next(curr.x - 1, curr.y + 1);
+	//		if (!go->visited[(go->curr.y + 1) * m_noGrid + go->curr.x + 1])
+	//		{
+	//			go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x + 1] = m_maze.See(MazePt(go->curr.x + 1, go->curr.y + 1));
+	//			if (go->grid[(go->curr.y + 1) * m_noGrid + go->curr.x + 1] == Maze::TILE_EMPTY)
+	//			{
+	//				go->curr.x += 1;
+	//				go->curr.y += 1;
+	//				return;
+	//			}
+	//		}
+	//	}
+	//}
+	//else //even x
+	//{
+	//	//BOT LEFT 
+	//	if (go->curr.x - 1 > -1 && go->curr.y - 1 > -1)
+	//	{
+	//		//MazePt next(curr.x - 1, curr.y + 1);
+	//		if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x - 1])
+	//		{
+	//			go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x - 1] = m_maze.See(MazePt(go->curr.x - 1, go->curr.y - 1));
+	//			if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x - 1] == Maze::TILE_EMPTY)
+	//			{
+	//				go->curr.x -= 1;
+	//				go->curr.y -= 1;
+	//				return;
+	//			}
+	//		}
+	//	}
 
-	//check if down is visited
-	if (go->curr.y - 1 > -1)
-	{
-		if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x])
-		{
-			go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] = m_maze.See(MazePt(go->curr.x, go->curr.y - 1));
-			if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] == Maze::TILE_EMPTY)
-			{
-				go->curr.y -= 1;
-				return;
-			}
-		}
-	}
+	//	//BOT RIGHT 
+	//	if (go->curr.x + 1 < m_noGrid && go->curr.y - 1 > -1)
+	//	{
+	//		//MazePt next(curr.x - 1, curr.y + 1);
+	//		if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x + 1])
+	//		{
+	//			go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x + 1] = m_maze.See(MazePt(go->curr.x + 1, go->curr.y - 1));
+	//			if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x + 1] == Maze::TILE_EMPTY)
+	//			{
+	//				go->curr.x += 1;
+	//				go->curr.y -= 1;
+	//				return;
+	//			}
+	//		}
+	//	}
+	//}
+
+	////check if down is visited
+	//if (go->curr.y - 1 > -1)
+	//{
+	//	if (!go->visited[(go->curr.y - 1) * m_noGrid + go->curr.x])
+	//	{
+	//		go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] = m_maze.See(MazePt(go->curr.x, go->curr.y - 1));
+	//		if (go->grid[(go->curr.y - 1) * m_noGrid + go->curr.x] == Maze::TILE_EMPTY)
+	//		{
+	//			go->curr.y -= 1;
+	//			return;
+	//		}
+	//	}
+	//}
 
 	go->stack.pop_back(); //clears stack
 	if (!go->stack.empty())
