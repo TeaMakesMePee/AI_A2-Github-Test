@@ -90,7 +90,7 @@ StateDead::~StateDead()
 
 void StateDead::Enter()
 {
-
+	//Remember to remove GO from either botSide/topSide list when dead
 }
 
 void StateDead::Update(double dt)
