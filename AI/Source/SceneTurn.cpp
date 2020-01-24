@@ -20,13 +20,11 @@ void SceneTurn::Init()
 {
 	SceneBase::Init();
 
-	//Calculating aspect ratio
 	appliedXScale = 1.2f;
 
 	m_worldHeight = 100.f;
 	m_worldWidth = m_worldHeight * (float)Application::GetWindowWidth() / Application::GetWindowHeight();
 
-	//Physics code here
 	m_speed = 1.f;
 
 	Math::InitRNG();
@@ -59,8 +57,6 @@ void SceneTurn::Init()
 
 	m_rightOffset = 48.f;
 	botsideTurn = true;
-	//im just testing out some stuff
-
 
 	//Init event variables
 	eventTime = static_cast<double>(Math::RandFloatMinMax(30.f, 60.f));
