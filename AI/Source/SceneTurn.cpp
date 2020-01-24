@@ -900,6 +900,7 @@ void SceneTurn::SetUnitStats(GameObject* go)
 
 void SceneTurn::GenerateEventBombs()
 {
+	//Move this section to right after generating map
 	std::vector<int> EmptyTileIndex;
 	for (int x = 0; x < m_maze.m_grid.size(); ++x)
 	{
@@ -1410,7 +1411,7 @@ void SceneTurn::Render()
 		//}
 	//}
 
-	//Rendering of map
+	//Rendering of Map
 	for (int y = 0; y < m_noGrid; ++y)
 	{
 		for (int x = 0; x < m_noGrid; ++x)
@@ -1443,6 +1444,7 @@ void SceneTurn::Render()
 	}
 
 	//Rendering of Loot
+	//Rendered seperately since loot is not saved to map array
 	for (auto loot : m_maze.m_loot)
 	{
 		if (!m_visible[loot->index])
@@ -1450,7 +1452,7 @@ void SceneTurn::Render()
 		RenderLoot(loot->index, loot->type);
 	}
 
-	//Rendering of GOs
+	//Rendering of Units
 	for (auto go : m_goList)
 	{
 		if (!m_visible[go->curr.y * m_noGrid + go->curr.x])
