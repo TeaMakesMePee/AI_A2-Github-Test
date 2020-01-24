@@ -1219,7 +1219,12 @@ void SceneTurn::Update(double dt)
 	}
 
 	//Swap to other side/opponent
+	if (target->turnOver)
+		botsideTurn = !botsideTurn;
+
 	//Choose one of the side's unit (maybe make a function to choose)
+	int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
+	target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
 
 	if (target)
 	{
@@ -1233,71 +1238,63 @@ void SceneTurn::Update(double dt)
 		}
 	}
 
-	//Call GetAIDecision() to decide 
+	//Call GetAIDecision() to decide state
 	//Set state
 	//Update FSM
 
 	timer += m_speed * dt;
 	static const float TURN_TIME = 0.25f;
-	//if (timer > TURN_TIME)
-	//{
-		//timer = 0.0;
-		//for (auto go : m_goList)
-		//{
-			//if (!go->active)
-				//return;
-		if (target)
+	if (target)
+	{
+		if (!target->turnOver)
 		{
-			if (!target->turnOver)
+			if (timer > TURN_TIME)
 			{
-				if (timer > TURN_TIME)
+				timer = 0.0;
+				if (!target->path.empty())
 				{
-					timer = 0.0;
-					if (!target->path.empty())
+					for (int x = 0; x < target->path.size(); ++x)
 					{
-						for (int x = 0; x < target->path.size(); ++x)
+						if (x == target->path.size() - 1)
 						{
-							if (x == target->path.size() - 1)
+							target->path.clear();
+							m_turn++;
+							target->turnOver = true;
+						}
+						else
+						{
+							if (target->path[x].x == target->curr.x && target->path[x].y == target->curr.y)
 							{
-								target->path.clear();
-								m_turn++;
-								target->turnOver = true;
-							}
-							else
-							{
-								if (target->path[x].x == target->curr.x && target->path[x].y == target->curr.y)
-								{
-									m_myGrid[target->curr.y * m_noGrid + target->curr.x] = m_maze.m_grid[target->curr.y * m_noGrid + target->curr.x];
-									target->curr = target->path[x + 1];
-									m_myGrid[target->curr.y * m_noGrid + target->curr.x] = Maze::TILE_PLAYER;
-									break;
-								}
+								m_myGrid[target->curr.y * m_noGrid + target->curr.x] = m_maze.m_grid[target->curr.y * m_noGrid + target->curr.x];
+								target->curr = target->path[x + 1];
+								m_myGrid[target->curr.y * m_noGrid + target->curr.x] = Maze::TILE_PLAYER;
+								//Can check here if player stepped on loot instead of checking every frame below
+								break;
 							}
 						}
 					}
-					else
-					{
-						GetAIDecision(target);
-						DFSOnce(target);
-						target->turnOver = false;
-					}
+				}
+				else
+				{
+					GetAIDecision(target);
+					DFSOnce(target);
+					target->turnOver = false;
 				}
 			}
 		}
-		//}
-	//}
+	}
 
 	//Check if GO has picked up Loot
-	for (auto go : m_goList)
+	if (target)
 	{
-		int goIndex = go->curr.y * m_noGrid + go->curr.x;
+		int goIndex = target->curr.y * m_noGrid + target->curr.x;
 		for (int x = 0; x < m_maze.m_loot.size(); ++x)
 		{
 			if (goIndex == m_maze.m_loot[x]->index)
 			{
-				if (go->inventoryList.size() < go->inventorySize)
+				if (target->inventoryList.size() < target->inventorySize)
 				{
-					go->inventoryList.push_back(m_maze.m_loot[x]->type);
+					target->inventoryList.push_back(m_maze.m_loot[x]->type);
 					m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
 				}
 			}
@@ -1418,8 +1415,8 @@ void SceneTurn::Render()
 	{
 		for (int x = 0; x < m_noGrid; ++x)
 		{
-			//if (!m_visible[y * m_noGrid + x])
-				//continue;
+			if (!m_visible[y * m_noGrid + x])
+				continue;
 			modelStack.PushMatrix();
 			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * y + m_gridOffset + ((x % 2) ? m_gridSize * 0.5f : 0), 0);
 			modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
