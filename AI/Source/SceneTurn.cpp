@@ -1226,6 +1226,7 @@ void SceneTurn::Update(double dt)
 	int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
 	target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
 
+	//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
 	if (target)
 	{
 		std::fill(m_visible.begin(), m_visible.end(), false);
@@ -1276,7 +1277,6 @@ void SceneTurn::Update(double dt)
 				}
 				else
 				{
-					GetAIDecision(target);
 					DFSOnce(target);
 					target->turnOver = false;
 				}
