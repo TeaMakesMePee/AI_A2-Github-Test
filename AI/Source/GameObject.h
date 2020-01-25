@@ -27,9 +27,9 @@ struct GameObject
 	Vector3 pos;
 	Vector3 vel;
 	Vector3 scale;
+	Vector3 target;
 	bool active;
 	float mass;
-	Vector3 target;
 	int id;
 	int steps;
 	std::vector<Maze::TILE_CONTENT> grid;
@@ -47,11 +47,15 @@ struct GameObject
 
 	int visRadius;
 	std::vector<int> visIndexes;
+	std::vector<int> adjIndexes;
 	StateMachine* sm;
 
 	//GameObject Stats
 	float health;
 	float damage;
+	bool botSide;
+	GameObject* targetEnemy;
+	int targetIndex;
 
 	//Turn
 	bool turnOver;

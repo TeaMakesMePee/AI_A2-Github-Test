@@ -64,6 +64,7 @@ public:
 	TILE_CONTENT See(MazePt tile);
 	std::vector<TILE_CONTENT> m_grid; //move from private
 	std::vector<Loot*> m_loot;
+
 private:
 	//Do not make these public
 	unsigned m_key;

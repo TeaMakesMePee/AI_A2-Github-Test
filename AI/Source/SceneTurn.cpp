@@ -7,6 +7,8 @@
 #include "StateMachine.h"
 #include "StatesGeneric.h"
 #include <fstream>
+#include "ConcreteMessages.h"
+#include "PostOffice.h"
 
 SceneTurn::SceneTurn()
 {
@@ -19,6 +21,8 @@ SceneTurn::~SceneTurn()
 void SceneTurn::Init()
 {
 	SceneBase::Init();
+
+	PostOffice::GetInstance()->Register("Scene", this);
 
 	appliedXScale = 1.2f;
 
@@ -82,8 +86,8 @@ GameObject* SceneTurn::FetchGO(GameObject::GAMEOBJECT_TYPE type)
 		if (type == GameObject::GO_K9)
 		{
 			go->sm = new StateMachine();
-			go->sm->AddState(new StateIdle("Idle", go));
 			go->sm->AddState(new StateMove("Move", go));
+			go->sm->AddState(new StateIdle("Idle", go));
 			go->sm->AddState(new StateAttack("Attack", go));
 			go->sm->AddState(new StateDead("Dead", go));
 		}
@@ -326,8 +330,8 @@ bool SceneTurn::BFS(MazePt start, MazePt end)
 
 void SceneTurn::DFSOnce(GameObject* go)
 {
-	go->stack.push_back(go->curr);
-	go->visited[go->curr.y * m_noGrid + go->curr.x] = true;
+	//go->stack.push_back(go->curr);
+	//go->visited[go->curr.y * m_noGrid + go->curr.x] = true;
 
 	std::vector<MazePt> nextList;
 	const static int offset[][2] = { {0, 1}, {0, -1}, {1, 0}, {-1, 0}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1} };
@@ -354,11 +358,9 @@ void SceneTurn::DFSOnce(GameObject* go)
 	{
 		if (nextList[z].x < 0 || nextList[z].x >= m_noGrid || nextList[z].y < 0 || nextList[z].y >= m_noGrid)
 			continue;
-		if (go->visited[nextList[z].y * m_noGrid + nextList[z].x])
-			continue;
 		if (m_myGrid[nextList[z].y * m_noGrid + nextList[z].x] > -1)
 		{
-			go->curr = nextList[z];
+			go->path.push_back(nextList[z]);
 			return;
 		}
 	}
@@ -488,12 +490,12 @@ void SceneTurn::DFSOnce(GameObject* go)
 	//	}
 	//}
 
-	go->stack.pop_back(); //clears stack
-	if (!go->stack.empty())
-	{
-		go->curr = go->stack.back(); //set the backtrack
-		go->stack.pop_back();
-	}
+	//go->stack.pop_back(); //clears stack
+	//if (!go->stack.empty())
+	//{
+		//go->curr = go->stack.back(); //set the backtrack
+		//go->stack.pop_back();
+	//}
 }
 
 bool SceneTurn::BFSLimit(GameObject* go, MazePt end, int limit)
@@ -920,9 +922,44 @@ void SceneTurn::GenerateEventBombs()
 
 void SceneTurn::GetAIDecision(GameObject* go)
 {
-	//Check if any enemies adjacent, if so, attack
+	go->targetEnemy = NULL;
+	go->targetIndex = -1;
+	//Check if event active
+
+	//Get the first enemy within visibility range, if any
+	std::vector<GameObject*> enemyList = (go->botSide ? topsideList : botsideList);
+	for (int x = 0; x < go->visIndexes.size(); ++x)
+	{
+		for (int y = 0; y < enemyList.size(); ++y)
+		{
+			if (enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x == go->visIndexes[x])
+			{
+				//Set pointer to enemy GO
+				go->targetEnemy = enemyList[y];
+				//Update enemy's adj tiles
+				UpdateVisibleTiles(go->targetEnemy, go->targetEnemy->curr, 1, false);
+				//Set pointer to enemy GO's index
+				go->targetIndex = enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x;
+				return;
+			}
+		}
+	}
+
 	//Check if any loot or enemy in range but not adjacent, then move there
-	//Dfs if theres nothing in vis range
+	for (int x = 0; x < go->visIndexes.size(); ++x)
+	{
+		for (int y = 0; y < m_maze.m_loot.size(); ++y)
+		{
+			if (m_maze.m_loot[y]->index == go->visIndexes[x])
+			{
+				go->targetIndex = m_maze.m_loot[y]->index;
+				//Set state to move towards target index
+				return;
+			}
+		}
+	}
+
+	//Set state to move, dfs once in there
 }
 
 void SceneTurn::SetUnits()
@@ -931,6 +968,7 @@ void SceneTurn::SetUnits()
 	{
 		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
 		SetUnitStats(go);
+		go->botSide = false;
 		go->grid.resize(m_noGrid * m_noGrid);
 		go->visited.resize(m_noGrid * m_noGrid);
 		go->aGlobal.resize(m_noGrid * m_noGrid);
@@ -941,12 +979,21 @@ void SceneTurn::SetUnits()
 		go->stack.push_back(go->curr);
 		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 		topsideList.push_back(go);
+
+		go->sm->SetNextState("Idle");
 	}
 
 	for (int x = 8; x < 13; ++x)
 	{
 		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+
+		//Sets stats for the type of Unit
 		SetUnitStats(go);
+
+		//Declare side
+		go->botSide = true;
+
+		//Traversal related
 		go->grid.resize(m_noGrid * m_noGrid);
 		go->visited.resize(m_noGrid * m_noGrid);
 		go->aGlobal.resize(m_noGrid * m_noGrid);
@@ -956,9 +1003,42 @@ void SceneTurn::SetUnits()
 		go->curr.Set(x, 0);
 		go->stack.push_back(go->curr);
 		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+
+		//List of players on side
 		botsideList.push_back(go);
 		target = go;
+
+		go->sm->SetNextState("Idle");
 	}
+}
+
+bool SceneTurn::Handle(Message* message)
+{
+	MessageFindIndex* msgFI = dynamic_cast<MessageFindIndex*>(message);
+	if (msgFI)
+	{
+		GetAIDecision(msgFI->go);
+		delete msgFI;
+		return true;
+	}
+
+	MessageMoveType* msgMT = dynamic_cast<MessageMoveType*>(message);
+	if (msgMT)
+	{
+		if (msgMT->go->targetIndex == -1)
+		{
+			DFSOnce(msgMT->go);
+		}
+		else
+		{
+			MazePt end(msgMT->go->targetIndex % m_noGrid, msgMT->go->targetIndex / m_noGrid);
+			AStar(msgMT->go, end);
+		}
+		delete msgMT;
+		return true;
+	}
+
+	return false;
 }
 
 void SceneTurn::Update(double dt)
@@ -1217,28 +1297,45 @@ void SceneTurn::Update(double dt)
 
 	//Swap to other side/opponent
 	if (target->turnOver)
+	{
 		botsideTurn = !botsideTurn;
 
-	//Choose one of the side's unit (maybe make a function to choose)
-	int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
-	target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
+		//Choose one of the side's unit (maybe make a function to choose)
+		int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
+		target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
+		target->turnOver = false;
+	}
 
 	//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
 	if (target)
 	{
 		std::fill(m_visible.begin(), m_visible.end(), false);
 		target->visIndexes.clear();
-		UpdateVisibleTiles(target, target->curr, target->visRadius);
+		UpdateVisibleTiles(target, target->curr, target->visRadius, true);
+
+		//Set Adj indexes
+		UpdateVisibleTiles(target, target->curr, 1, false);
+
 		if (eventActive)
 		{
 			for (auto mine : mineList)
-				UpdateVisibleTiles(mine, mine->curr, mine->visRadius);
+				UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
 		}
 	}
 
 	//Call GetAIDecision() to decide state
+	//GetAIDecision(target);
+
 	//Set state
 	//Update FSM
+	if (target)
+		target->sm->Update(dt);
+
+	if (target)
+	{
+		std::cout << target->curr.x << ", " << target->curr.y << std::endl;
+		std::cout << target->sm->GetCurrentState() << std::endl;
+	}
 
 	timer += m_speed * dt;
 	static const float TURN_TIME = 0.25f;
@@ -1272,11 +1369,6 @@ void SceneTurn::Update(double dt)
 						}
 					}
 				}
-				else
-				{
-					DFSOnce(target);
-					target->turnOver = false;
-				}
 			}
 		}
 	}
@@ -1289,11 +1381,8 @@ void SceneTurn::Update(double dt)
 		{
 			if (goIndex == m_maze.m_loot[x]->index)
 			{
-				if (target->inventoryList.size() < target->inventorySize)
-				{
-					target->inventoryList.push_back(m_maze.m_loot[x]->type);
-					m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
-				}
+				target->inventoryList.push_back(m_maze.m_loot[x]->type);
+				m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
 			}
 		}
 	}
@@ -1339,7 +1428,7 @@ void SceneTurn::RenderLoot(int index, Maze::LOOT_TYPE type)
 	modelStack.PopMatrix();
 }
 
-void SceneTurn::UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius)
+void SceneTurn::UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius, bool vis)
 {
 	if (!m_visible[go->curr.y * m_noGrid + go->curr.x])
 		m_visible[go->curr.y * m_noGrid + go->curr.x] = true;
@@ -1361,17 +1450,24 @@ void SceneTurn::UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius)
 		}
 		if (next.x < 0 || next.x >= m_noGrid || next.y < 0 || next.y >= m_noGrid)
 			continue;
-		if (!m_visible[next.y * m_noGrid + next.x])
+		if (vis)
 		{
-			go->visIndexes.push_back(next.y * m_noGrid + next.x);
-			m_visible[next.y * m_noGrid + next.x] = true;
+			if (!m_visible[next.y * m_noGrid + next.x])
+			{
+				go->visIndexes.push_back(next.y * m_noGrid + next.x);
+				m_visible[next.y * m_noGrid + next.x] = true;
+			}
+		}
+		else
+		{
+			go->adjIndexes.push_back(next.y * m_noGrid + next.x);
 		}
 		if (visRadius > 1)
 			nextList.push_back(next);
 	}
 	for (auto nextL : nextList)
 	{
-		UpdateVisibleTiles(go, nextL, visRadius - 1);
+		UpdateVisibleTiles(go, nextL, visRadius - 1, true);
 	}
 }
 

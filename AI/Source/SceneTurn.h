@@ -6,8 +6,9 @@
 #include "SceneBase.h"
 #include "Maze.h"
 #include <queue>
+#include "ObjectBase.h"
 
-class SceneTurn : public SceneBase
+class SceneTurn : public SceneBase, public ObjectBase
 {
 public:
 	SceneTurn();
@@ -20,7 +21,7 @@ public:
 
 	void RenderGO(GameObject *go);
 	void RenderLoot(int index, Maze::LOOT_TYPE type);
-	void UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius);
+	void UpdateVisibleTiles(GameObject* go, MazePt point, int visRadius, bool vis);
 
 	GameObject* FetchGO(GameObject::GAMEOBJECT_TYPE type);
 
@@ -42,6 +43,9 @@ public:
 
 	//Set Up Game Units
 	void SetUnits();
+
+	//Postoffice
+	virtual bool Handle(Message* message);
 
 protected:
 
