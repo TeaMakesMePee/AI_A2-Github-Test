@@ -60,8 +60,7 @@ struct GameObject
 	//Turn
 	bool turnOver;
 	
-	int inventorySize;
-	std::vector<Maze::LOOT_TYPE> inventoryList;
+	std::vector<Maze::Loot*> buffList;
 
 	virtual bool Handle(Message* message);
 

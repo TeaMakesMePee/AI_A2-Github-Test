@@ -47,6 +47,10 @@ public:
 	//Postoffice
 	virtual bool Handle(Message* message);
 
+	//Buffs 
+	void AddBuff(GameObject* go, Maze::LOOT_TYPE type);
+	void RemoveBuff(GameObject* go, Maze::LOOT_TYPE type);
+
 protected:
 
 	std::vector<GameObject *> m_goList;

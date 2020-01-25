@@ -16,7 +16,6 @@ StateIdle::~StateIdle()
 void StateIdle::Enter()
 {
 	PostOffice::GetInstance()->Send("Scene", new MessageFindIndex(m_go));
-	std::cout << "Dfs" << std::endl;
 }
 
 void StateIdle::Update(double dt)
@@ -50,6 +49,7 @@ void StateIdle::Update(double dt)
 					}
 				}
 			}
+			m_go->targetEnemy->adjIndexes.clear();
 		}
 	}
 }
@@ -89,18 +89,13 @@ void StateMove::Update(double dt)
 	}
 	else if (m_go->path.empty())
 	{
-		//std::cout << "Chase loot" << std::endl;
-		//if (m_go->curr.y * 20 + m_go->curr.x == m_go->targetIndex)
-		//{
-		//	m_go->sm->SetNextState("Idle");
-		//}
 		m_go->sm->SetNextState("Idle");
+		m_go->turnOver = true;
 	}
 }
 
 void StateMove::Exit()
 {
-	m_go->turnOver = true;
 }
 
 StateAttack::StateAttack(const std::string& stateID, GameObject* go)
@@ -115,17 +110,18 @@ StateAttack::~StateAttack()
 
 void StateAttack::Enter()
 {
+	std::cout << "attack" << std::endl;
 	m_go->targetEnemy->health -= m_go->damage;
 }
 
 void StateAttack::Update(double dt)
 {
 	m_go->sm->SetNextState("Idle");
+	m_go->turnOver = true;
 }
 
 void StateAttack::Exit()
 {
-	m_go->turnOver = true;
 }
 
 StateDead::StateDead(const std::string& stateID, GameObject* go)

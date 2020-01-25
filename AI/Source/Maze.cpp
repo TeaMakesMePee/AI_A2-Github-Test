@@ -67,13 +67,13 @@ void Maze::GenerateLoot(float lootLoad)
 			int percent = Math::RandIntMinMax(0, 100);
 			Loot* loot;
 			if (percent <= 15)
-				loot = new Loot(chosen, LOOT_TYPE::LOOT_HPPACK);
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_HPPACK, 3);
 			else if (percent <= 30)
-				loot = new Loot(chosen, LOOT_TYPE::LOOT_DMGBOOST);
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_DMGBOOST, 3);
 			else if (percent <= 65)
-				loot = new Loot(chosen, LOOT_TYPE::LOOT_DRUG);
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_DRUG, 2);
 			else if (percent <= 100)
-				loot = new Loot(chosen, LOOT_TYPE::LOOT_FOOD);
+				loot = new Loot(chosen, LOOT_TYPE::LOOT_FOOD, 2);
 			m_loot.push_back(loot);
 			++i;
 		}

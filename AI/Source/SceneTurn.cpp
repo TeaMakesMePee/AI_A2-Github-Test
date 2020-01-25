@@ -360,6 +360,7 @@ void SceneTurn::DFSOnce(GameObject* go)
 			continue;
 		if (m_myGrid[nextList[z].y * m_noGrid + nextList[z].x] > -1)
 		{
+			go->path.push_back(go->curr);
 			go->path.push_back(nextList[z]);
 			return;
 		}
@@ -887,7 +888,6 @@ void SceneTurn::SetUnitStats(GameObject* go)
 		go->visRadius = 3;
 		go->health = 100.f;
 		go->damage = 20.f;
-		go->inventorySize = 5;
 		break;
 	case GameObject::GO_MINE:
 		go->visRadius = 1;
@@ -975,9 +975,9 @@ void SceneTurn::SetUnits()
 		go->aLocal.resize(m_noGrid * m_noGrid);
 		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
 		std::fill(go->visited.begin(), go->visited.end(), false);
-		go->curr.Set(x, 0);
+		go->curr.Set(x % m_noGrid, x / m_noGrid);
 		go->stack.push_back(go->curr);
-		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 		topsideList.push_back(go);
 
 		go->sm->SetNextState("Idle");
@@ -1000,9 +1000,9 @@ void SceneTurn::SetUnits()
 		go->aLocal.resize(m_noGrid * m_noGrid);
 		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
 		std::fill(go->visited.begin(), go->visited.end(), false);
-		go->curr.Set(x, 0);
+		go->curr.Set(x % m_noGrid, x / m_noGrid);
 		go->stack.push_back(go->curr);
-		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 
 		//List of players on side
 		botsideList.push_back(go);
@@ -1032,13 +1032,54 @@ bool SceneTurn::Handle(Message* message)
 		else
 		{
 			MazePt end(msgMT->go->targetIndex % m_noGrid, msgMT->go->targetIndex / m_noGrid);
-			AStar(msgMT->go, end);
+			if (!AStar(msgMT->go, end))
+			{
+				std::cout << "Failed. " << m_myGrid[end.y * m_noGrid + end.x] << std::endl;
+			}
 		}
 		delete msgMT;
 		return true;
 	}
 
 	return false;
+}
+
+void SceneTurn::AddBuff(GameObject* go, Maze::LOOT_TYPE type)
+{
+	switch (type)
+	{
+	case Maze::LOOT_DMGBOOST:
+		go->damage = go->damage * 1.25f;
+		break;
+	case Maze::LOOT_DRUG:
+		go->visRadius += 1;
+		break;
+	case Maze::LOOT_FOOD:
+		go->health = go->health * 1.2f;
+		break;
+	case Maze::LOOT_HPPACK:
+		go->health = go->health * 1.5f;
+		break;
+	}
+}
+
+void SceneTurn::RemoveBuff(GameObject* go, Maze::LOOT_TYPE type)
+{
+	switch (type)
+	{
+	case Maze::LOOT_DMGBOOST:
+		go->damage = go->damage / 1.25f;
+		break;
+	case Maze::LOOT_DRUG:
+		go->visRadius -= 1;
+		break;
+	case Maze::LOOT_FOOD:
+		go->health = go->health / 1.2f;
+		break;
+	case Maze::LOOT_HPPACK:
+		go->health = go->health / 1.5f;
+		break;
+	}
 }
 
 void SceneTurn::Update(double dt)
@@ -1304,6 +1345,21 @@ void SceneTurn::Update(double dt)
 		int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
 		target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
 		target->turnOver = false;
+		timer = 0.0;
+
+		//Reduce life and remove buffs
+		if (!target->buffList.empty())
+		{
+			for (int x = 0; x < target->buffList.size(); ++x)
+			{
+				target->buffList[x]->m_life--;
+				if (target->buffList[x]->m_life == 0)
+				{
+					RemoveBuff(target, target->buffList[x]->type);
+					target->buffList.erase(target->buffList.begin() + x);
+				}
+			}
+		}
 	}
 
 	//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
@@ -1311,6 +1367,7 @@ void SceneTurn::Update(double dt)
 	{
 		std::fill(m_visible.begin(), m_visible.end(), false);
 		target->visIndexes.clear();
+		target->adjIndexes.clear();
 		UpdateVisibleTiles(target, target->curr, target->visRadius, true);
 
 		//Set Adj indexes
@@ -1331,14 +1388,8 @@ void SceneTurn::Update(double dt)
 	if (target)
 		target->sm->Update(dt);
 
-	if (target)
-	{
-		std::cout << target->curr.x << ", " << target->curr.y << std::endl;
-		std::cout << target->sm->GetCurrentState() << std::endl;
-	}
-
 	timer += m_speed * dt;
-	static const float TURN_TIME = 0.25f;
+	static const float TURN_TIME = 1.f;
 	if (target)
 	{
 		if (!target->turnOver)
@@ -1354,7 +1405,6 @@ void SceneTurn::Update(double dt)
 						{
 							target->path.clear();
 							m_turn++;
-							target->turnOver = true;
 						}
 						else
 						{
@@ -1381,7 +1431,8 @@ void SceneTurn::Update(double dt)
 		{
 			if (goIndex == m_maze.m_loot[x]->index)
 			{
-				target->inventoryList.push_back(m_maze.m_loot[x]->type);
+				target->buffList.push_back(m_maze.m_loot[x]);
+				AddBuff(target, m_maze.m_loot[x]->type);
 				m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
 			}
 		}
@@ -1620,15 +1671,15 @@ void SceneTurn::Render()
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 48);
 
 		ss.str("");
-		ss << "Inventory: " << target->inventoryList.size() << "/" << target->inventorySize;
+		ss << "Buffs: " << target->buffList.size();
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 45);
 
-		for (int x = 0; x < target->inventoryList.size(); ++x)
+		for (int x = 0; x < target->buffList.size(); ++x)
 		{
 			modelStack.PushMatrix();
 			modelStack.Translate(142.f + (5.f * x), 70.f, 0.f); 
 			modelStack.Scale(m_gridSize* appliedXScale * 1.5f, m_gridSize * 1.5f, m_gridSize * 1.5f);
-			switch (target->inventoryList[x])
+			switch (target->buffList[x]->type)
 			{
 			case Maze::LOOT_DMGBOOST:
 				RenderMesh(meshList[GEO_DMGBOOST], false);
@@ -1644,6 +1695,23 @@ void SceneTurn::Render()
 				break;
 			}
 			modelStack.PopMatrix();
+		}
+
+		if (target->targetEnemy)
+		{
+			switch (target->targetEnemy->type)
+			{
+			case GameObject::GO_K9:
+				name = "K9";
+			}
+
+			ss.str("");
+			ss << "Enemy Unit: " << name;
+			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f/255.f, 0.f), 3, 58, 36);
+
+			ss.str("");
+			ss << "Enemy Health: " << target->health;
+			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f / 255.f, 0.f), 3, 58, 33);
 		}
 	}
 }

@@ -43,9 +43,10 @@ public:
 	};
 	struct Loot
 	{
-		Loot(int i, Maze::LOOT_TYPE type) : index(i), type(type) { }
+		Loot(int i, Maze::LOOT_TYPE type, int life) : index(i), type(type),  m_life(life){ }
 		int index;
 		Maze::LOOT_TYPE type;
+		int m_life;
 	};
 	Maze();
 	~Maze();
