@@ -51,6 +51,8 @@ public:
 	void AddBuff(GameObject* go, Maze::LOOT_TYPE type);
 	void RemoveBuff(GameObject* go, Maze::LOOT_TYPE type);
 
+	void WriteToFile();
+
 protected:
 
 	std::vector<GameObject *> m_goList;

@@ -33,7 +33,7 @@ void SceneTurn::Init()
 
 	Math::InitRNG();
 
-	m_noGrid = 20;
+	m_noGrid = 12;
 	m_gridSize = m_worldHeight / (m_noGrid + 1);
 	m_gridOffset = m_gridSize / 2;
 
@@ -975,7 +975,14 @@ void SceneTurn::SetUnits()
 		go->aLocal.resize(m_noGrid * m_noGrid);
 		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
 		std::fill(go->visited.begin(), go->visited.end(), false);
-		go->curr.Set(x % m_noGrid, x / m_noGrid);
+		for (int y = m_myGrid.size() - 1; y > -1; --y)
+		{
+			if (m_myGrid[y] == Maze::TILE_EMPTY)
+			{
+				go->curr.Set(y % m_noGrid, y / m_noGrid);
+				break;
+			}
+		}
 		go->stack.push_back(go->curr);
 		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 		topsideList.push_back(go);
@@ -983,7 +990,7 @@ void SceneTurn::SetUnits()
 		go->sm->SetNextState("Idle");
 	}
 
-	for (int x = 8; x < 13; ++x)
+	for (int x = 0; x < 5; ++x)
 	{
 		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
 
@@ -1000,7 +1007,14 @@ void SceneTurn::SetUnits()
 		go->aLocal.resize(m_noGrid * m_noGrid);
 		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
 		std::fill(go->visited.begin(), go->visited.end(), false);
-		go->curr.Set(x % m_noGrid, x / m_noGrid);
+		for (int y = 0; y < m_myGrid.size(); ++y)
+		{
+			if (m_myGrid[y] == Maze::TILE_EMPTY)
+			{
+				go->curr.Set(y % m_noGrid, y / m_noGrid);
+				break;
+			}
+		}
 		go->stack.push_back(go->curr);
 		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
 
@@ -1080,6 +1094,24 @@ void SceneTurn::RemoveBuff(GameObject* go, Maze::LOOT_TYPE type)
 		go->health = go->health / 1.5f;
 		break;
 	}
+}
+
+void SceneTurn::WriteToFile()
+{
+	std::ofstream myfile;
+	myfile.open("Map3.txt");
+	for (int x = 0; x < m_noGrid; ++x)
+	{
+		for (int y = 0; y < m_noGrid; ++y)
+		{
+			if (m_myGrid[x * m_noGrid + y] == Maze::TILE_EMPTY)
+				myfile << "0";
+			else if (m_myGrid[x * m_noGrid + y] == Maze::TILE_WALL)
+				myfile << "1";
+		}
+		myfile << "\n";
+	}
+	myfile.close();
 }
 
 void SceneTurn::Update(double dt)
@@ -1310,6 +1342,7 @@ void SceneTurn::Update(double dt)
 				break;
 			}
 		}
+		//WriteToFile();
 	}
 	else if (bRightState && !Application::IsKeyPressed(VK_RIGHT))
 	{
@@ -1337,34 +1370,34 @@ void SceneTurn::Update(double dt)
 	}
 
 	//Swap to other side/opponent
-	if (target->turnOver)
+	if (target)
 	{
-		botsideTurn = !botsideTurn;
-
-		//Choose one of the side's unit (maybe make a function to choose)
-		int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
-		target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
-		target->turnOver = false;
-		timer = 0.0;
-
-		//Reduce life and remove buffs
-		if (!target->buffList.empty())
+		if (target->turnOver)
 		{
-			for (int x = 0; x < target->buffList.size(); ++x)
+			botsideTurn = !botsideTurn;
+
+			//Choose one of the side's unit (maybe make a function to choose)
+			int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
+			target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
+			target->turnOver = false;
+			timer = 0.0;
+
+			//Reduce life and remove buffs
+			if (!target->buffList.empty())
 			{
-				target->buffList[x]->m_life--;
-				if (target->buffList[x]->m_life == 0)
+				for (int x = 0; x < target->buffList.size(); ++x)
 				{
-					RemoveBuff(target, target->buffList[x]->type);
-					target->buffList.erase(target->buffList.begin() + x);
+					target->buffList[x]->m_life--;
+					if (target->buffList[x]->m_life == 0)
+					{
+						RemoveBuff(target, target->buffList[x]->type);
+						target->buffList.erase(target->buffList.begin() + x);
+					}
 				}
 			}
 		}
-	}
 
-	//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
-	if (target)
-	{
+		//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
 		std::fill(m_visible.begin(), m_visible.end(), false);
 		target->visIndexes.clear();
 		target->adjIndexes.clear();
@@ -1378,15 +1411,11 @@ void SceneTurn::Update(double dt)
 			for (auto mine : mineList)
 				UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
 		}
+
+		//Update FSM
+		if (target)
+			target->sm->Update(dt);
 	}
-
-	//Call GetAIDecision() to decide state
-	//GetAIDecision(target);
-
-	//Set state
-	//Update FSM
-	if (target)
-		target->sm->Update(dt);
 
 	timer += m_speed * dt;
 	static const float TURN_TIME = 1.f;
