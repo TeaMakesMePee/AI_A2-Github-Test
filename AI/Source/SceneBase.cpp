@@ -195,6 +195,10 @@ void SceneBase::Init()
 	meshList[GEO_REDOVERLAY] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_REDOVERLAY]->textureID = LoadTGA("Image//hexredoverlay.tga");
 
+	//HP Bar
+	meshList[GEO_RED] = MeshBuilder::GenerateQuad("full", Color(1, 0, 0));
+	meshList[GEO_GREEN] = MeshBuilder::GenerateQuad("full", Color(0, 1, 0));
+
 	bLightEnabled = false;
 }
 

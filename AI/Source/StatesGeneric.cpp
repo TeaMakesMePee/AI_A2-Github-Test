@@ -110,8 +110,8 @@ StateAttack::~StateAttack()
 
 void StateAttack::Enter()
 {
-	m_go->targetEnemy->health -= m_go->damage;
-	if (m_go->targetEnemy->health <= 0.f)
+	m_go->targetEnemy->currHealth -= m_go->damage;
+	if (m_go->targetEnemy->currHealth <= 0.f)
 		m_go->targetEnemy->sm->SetNextState("Dead");
 }
 

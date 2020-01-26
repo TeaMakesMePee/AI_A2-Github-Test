@@ -84,6 +84,8 @@ public:
 		GEO_DEAD,
 		GEO_BLUEOVERLAY,
 		GEO_REDOVERLAY,
+		GEO_RED,
+		GEO_GREEN,
 		NUM_GEOMETRY,
 	};
 public:

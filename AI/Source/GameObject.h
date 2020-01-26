@@ -51,7 +51,8 @@ struct GameObject
 	StateMachine* sm;
 
 	//GameObject Stats
-	float health;
+	float baseHealth;
+	float currHealth;
 	float damage;
 	bool botSide;
 	GameObject* targetEnemy;

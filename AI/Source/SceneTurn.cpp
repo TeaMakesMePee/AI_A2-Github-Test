@@ -896,12 +896,12 @@ void SceneTurn::SetUnitStats(GameObject* go)
 	{
 	case GameObject::GO_K9:
 		go->visRadius = 3;
-		go->health = 100.f;
+		go->currHealth = go->baseHealth = 100.f;
 		go->damage = 20.f;
 		break;
 	case GameObject::GO_MINE:
 		go->visRadius = 1;
-		go->health = 1.f;
+		go->currHealth = go->baseHealth = 1.f;
 		break;
 	}
 }
@@ -1086,10 +1086,12 @@ void SceneTurn::AddBuff(GameObject* go, Maze::LOOT_TYPE type)
 		go->visRadius += 1;
 		break;
 	case Maze::LOOT_FOOD:
-		go->health = go->health * 1.2f;
+		go->currHealth *= 1.2f;
+		go->baseHealth *= 1.2f;
 		break;
 	case Maze::LOOT_HPPACK:
-		go->health = go->health * 1.5f;
+		go->currHealth *= 1.5f;
+		go->baseHealth *= 1.5f;
 		break;
 	}
 }
@@ -1105,10 +1107,12 @@ void SceneTurn::RemoveBuff(GameObject* go, Maze::LOOT_TYPE type)
 		go->visRadius -= 1;
 		break;
 	case Maze::LOOT_FOOD:
-		go->health = go->health / 1.2f;
+		go->currHealth /= 1.2f;
+		go->baseHealth /= 1.2f;
 		break;
 	case Maze::LOOT_HPPACK:
-		go->health = go->health / 1.5f;
+		go->currHealth /= 1.5f;
+		go->baseHealth /= 1.5f;
 		break;
 	}
 }
@@ -1422,105 +1426,126 @@ void SceneTurn::Update(double dt)
 	{
 		if (target->turnOver && timer > TURN_TIME)
 		{
+			//Remove units that died in the previous turn
 			RemoveDeadPlayers();
-			botsideTurn = !botsideTurn;
-			target = NULL;
-			//Choose one of the side's unit (maybe make a function to choose)
-			std::vector<GameObject*> nextturnList = (botsideTurn ? botsideList : topsideList);
-			for (int x = 0; x < nextturnList.size(); ++x)
-			{
-				if (nextturnList[x]->health <= 0.f)
-				{
-					target = nextturnList[x];
-					break;
-				}
-			}
-			if (target == NULL)
-			{
-				int rand = Math::RandIntMinMax(0, nextturnList.size() - 1);
-				target = nextturnList[rand];
-			}
-			target->turnOver = false;
-			target->turnSkipped = false;
-			timer = 0.0;
-			std::cout << "path size: " << target->path.size() << std::endl;
 
-			//Reduce life and remove buffs
-			if (!target->buffList.empty())
+			if (!CheckGameOver()) //Check if gameover after removing dead units
 			{
-				for (int x = 0; x < target->buffList.size(); ++x)
+				//Swap side
+				botsideTurn = !botsideTurn;
+
+				//Clear the current target
+				target = NULL;
+
+				//Choose one of the side's unit (maybe make a function to choose)
+				std::vector<GameObject*> nextturnList = (botsideTurn ? botsideList : topsideList);
+				for (int x = 0; x < nextturnList.size(); ++x)
 				{
-					target->buffList[x]->m_life--;
-					if (target->buffList[x]->m_life == 0)
+					if (nextturnList[x]->currHealth <= 0.f)
 					{
-						RemoveBuff(target, target->buffList[x]->type);
-						target->buffList.erase(target->buffList.begin() + x);
+						target = nextturnList[x];
+						break;
+					}
+				}
+
+				if (target == NULL)
+				{
+					int rand = Math::RandIntMinMax(0, nextturnList.size() - 1);
+					target = nextturnList[rand];
+				}
+
+				if (target)
+				{
+					target->turnOver = false;
+					target->turnSkipped = false;
+				}
+
+				timer = 0.0;
+				std::cout << "path size: " << target->path.size() << std::endl;
+
+				//Reduce life and remove buffs
+				if (!target->buffList.empty())
+				{
+					for (int x = 0; x < target->buffList.size(); ++x)
+					{
+						target->buffList[x]->m_life--;
+						if (target->buffList[x]->m_life == 0)
+						{
+							RemoveBuff(target, target->buffList[x]->type);
+							target->buffList.erase(target->buffList.begin() + x);
+						}
 					}
 				}
 			}
 		}
 
-		//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
-		std::fill(m_visible.begin(), m_visible.end(), false);
-		target->visIndexes.clear();
-		target->adjIndexes.clear();
-		UpdateVisibleTiles(target, target->curr, target->visRadius, true);
-
-		//Set Adj indexes
-		UpdateVisibleTiles(target, target->curr, 1, false);
-
-		if (eventActive)
+		if (!CheckGameOver())
 		{
-			for (auto mine : mineList)
-				UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
-		}
+			//Call this so adjacent tile information is set before using GetAIDecision() to help determine the decision
+			std::fill(m_visible.begin(), m_visible.end(), false);
+			target->visIndexes.clear();
+			target->adjIndexes.clear();
+			UpdateVisibleTiles(target, target->curr, target->visRadius, true);
 
-		//Update scene data's grid info
-		SceneData::GetInstance()->SetMyGrid(m_myGrid);
+			//Set Adj indexes
+			UpdateVisibleTiles(target, target->curr, 1, false);
 
-		//Update FSM
-		if (target && !target->turnOver)
-			target->sm->Update(dt);
-
-		if (!target->turnOver)
-		{
-			if (timer > TURN_TIME)
+			if (eventActive)
 			{
-				timer = 0.0;
-				if (!target->path.empty())
+				for (auto mine : mineList)
+					UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
+			}
+
+			//Update scene data's grid info
+			SceneData::GetInstance()->SetMyGrid(m_myGrid);
+
+			//Update FSM
+			//if (target && !target->turnOver)
+			//	target->sm->Update(dt);
+
+			if (!target->turnOver)
+			{
+				//Update FSM
+				target->sm->Update(dt);
+
+				if (timer > TURN_TIME)
 				{
-					for (int x = 0; x < target->path.size(); ++x)
+					timer = 0.0;
+					if (!target->path.empty())
 					{
-						if (x == target->path.size() - 1)
+						for (int x = 0; x < target->path.size(); ++x)
 						{
-							target->path.clear();
-							m_turn++;
-						}
-						else
-						{
-							if (target->path[x].x == target->curr.x && target->path[x].y == target->curr.y)
+							if (x == target->path.size() - 1)
 							{
-								m_myGrid[target->curr.y * m_noGrid + target->curr.x] = m_maze.m_grid[target->curr.y * m_noGrid + target->curr.x];
-								target->curr = target->path[x + 1];
-								m_myGrid[target->curr.y * m_noGrid + target->curr.x] = Maze::TILE_PLAYER;
-								//Can check here if player stepped on loot instead of checking every frame below
-								break;
+								target->path.clear();
+								m_turn++;
+							}
+							else
+							{
+								if (target->path[x].x == target->curr.x && target->path[x].y == target->curr.y)
+								{
+									m_myGrid[target->curr.y * m_noGrid + target->curr.x] = m_maze.m_grid[target->curr.y * m_noGrid + target->curr.x];
+									target->curr = target->path[x + 1];
+									m_myGrid[target->curr.y * m_noGrid + target->curr.x] = Maze::TILE_PLAYER;
+									//Can check here if player stepped on loot instead of checking every frame below
+									break;
+								}
 							}
 						}
 					}
 				}
 			}
-		}
 
-		//Check if GO has picked up Loot
-		int goIndex = target->curr.y * m_noGrid + target->curr.x;
-		for (int x = 0; x < m_maze.m_loot.size(); ++x)
-		{
-			if (goIndex == m_maze.m_loot[x]->index)
+			//Check if GO has picked up Loot
+			int goIndex = target->curr.y * m_noGrid + target->curr.x;
+			for (int x = 0; x < m_maze.m_loot.size(); ++x)
 			{
-				target->buffList.push_back(m_maze.m_loot[x]);
-				AddBuff(target, m_maze.m_loot[x]->type);
-				m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
+				if (goIndex == m_maze.m_loot[x]->index)
+				{
+					target->buffList.push_back(m_maze.m_loot[x]);
+					AddBuff(target, m_maze.m_loot[x]->type);
+					m_maze.m_loot.erase(m_maze.m_loot.begin() + x);
+				}
 			}
 		}
 	}
@@ -1528,9 +1553,12 @@ void SceneTurn::Update(double dt)
 
 void SceneTurn::RenderGO(GameObject *go)
 {
+	Vector3 pos(m_rightOffset + m_gridSize * appliedXScale * go->curr.x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * go->curr.y + m_gridOffset + ((go->curr.x % 2) ? m_gridSize * 0.5f : 0), 0);
+	Vector3 scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
+
 	modelStack.PushMatrix();
-	modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * go->curr.x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * go->curr.y + m_gridOffset + ((go->curr.x % 2) ? m_gridSize * 0.5f : 0), 0);
-	modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
+	modelStack.Translate(pos.x, pos.y, pos.z);
+	modelStack.Scale(scale.x, scale.y, scale.z);
 	if (go->sm->GetCurrentState() == "Dead")
 	{
 		RenderMesh(meshList[GEO_DEAD], false);
@@ -1556,6 +1584,25 @@ void SceneTurn::RenderGO(GameObject *go)
 		}
 	}
 	modelStack.PopMatrix();
+
+	if (go->sm->GetCurrentState() != "Dead")
+	{
+		float xScaleRed, xScaleGreen;
+		xScaleRed = scale.x * 0.6f;
+		xScaleGreen = scale.x * (go->currHealth / go->baseHealth) * 0.6f;
+
+		modelStack.PushMatrix();
+		modelStack.Translate(pos.x, pos.y - scale.y * 0.65f, 0);
+		modelStack.Scale(xScaleRed, 1.f, 0.f);
+		RenderMesh(meshList[GEO_RED], false);
+		modelStack.PopMatrix();
+
+		modelStack.PushMatrix();
+		modelStack.Translate(pos.x - (xScaleRed - xScaleGreen) / 2.f, pos.y - scale.y * 0.65f, 0);
+		modelStack.Scale(xScaleGreen, 1.f, 0.f);
+		RenderMesh(meshList[GEO_GREEN], false);
+		modelStack.PopMatrix();
+	}
 }
 
 void SceneTurn::RenderLoot(int index, Maze::LOOT_TYPE type)
@@ -1776,7 +1823,7 @@ void SceneTurn::Render()
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 54);
 
 		ss.str("");
-		ss << "Health: " << target->health;
+		ss << "Health: " << target->currHealth << " / " << target->baseHealth;
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 51);
 
 		ss.str("");
@@ -1823,7 +1870,7 @@ void SceneTurn::Render()
 			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f/255.f, 0.f), 3, 58, 36);
 
 			ss.str("");
-			ss << "Enemy Health: " << target->health;
+			ss << "Enemy Health: " << target->targetEnemy->currHealth << " / " << target->targetEnemy->baseHealth;
 			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f / 255.f, 0.f), 3, 58, 33);
 		}
 
@@ -1833,6 +1880,19 @@ void SceneTurn::Render()
 			ss << "Turn skipped. (Blocked by wall/player/bomb).";
 			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f / 255.f, 0.f), 3, 58, 30);
 		}
+	}
+
+	if (gameOver)
+	{
+		ss.str("");
+		ss << ((botsideList.empty() || topsideList.empty()) ? "GameOver! " : "TimesUp! ");
+		if (botsideList.size() == topsideList.size())
+			ss << "Draw!";
+		else if (botsideList.size() > topsideList.size())
+			ss << "Blue Team Won!";
+		else if (botsideList.size() < topsideList.size())
+			ss << "Red Team Won!";
+		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(0.f, 1.f, 0.f), 3, 58, 27);
 	}
 }
 
