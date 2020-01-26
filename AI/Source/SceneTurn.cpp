@@ -1539,13 +1539,21 @@ void SceneTurn::RenderGO(GameObject *go)
 	if (go->sm->GetCurrentState() == "Dead")
 	{
 		RenderMesh(meshList[GEO_DEAD], false);
+		if (go->botSide)
+			RenderMesh(meshList[GEO_BLUEOVERLAY], false);
+		else
+			RenderMesh(meshList[GEO_REDOVERLAY], false);
 	}
 	else
 	{
 		switch (go->type)
 		{
 		case GameObject::GO_K9: //Render GO_NPC
-			RenderMesh(meshList[GEO_K9], false);
+			RenderMesh(meshList[GEO_K9], false);		
+			if (go->botSide)
+				RenderMesh(meshList[GEO_BLUEOVERLAY], false);
+			else
+				RenderMesh(meshList[GEO_REDOVERLAY], false);
 			break;
 		case GameObject::GO_MINE:
 			RenderMesh(meshList[GEO_MINE], false);

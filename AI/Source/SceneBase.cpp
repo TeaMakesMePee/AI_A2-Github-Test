@@ -177,7 +177,7 @@ void SceneBase::Init()
 
 	//Units/Objects
 	meshList[GEO_K9] = MeshBuilder::GenerateQuad("k9", Color(0.f, 0.f, 0.f), 1.f);
-	meshList[GEO_K9]->textureID = LoadTGA("Image//hexk9.tga");
+	meshList[GEO_K9]->textureID = LoadTGA("Image//hexk92.tga");
 	meshList[GEO_MINE] = MeshBuilder::GenerateQuad("mine", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_MINE]->textureID = LoadTGA("Image//hexmine.tga");
 	meshList[GEO_DEAD] = MeshBuilder::GenerateQuad("dead", Color(0.f, 0.f, 0.f), 1.f);
@@ -186,6 +186,12 @@ void SceneBase::Init()
 	//Border
 	meshList[GEO_BORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_BORDER]->textureID = LoadTGA("Image//hexborder.tga");
+
+	//Overlay
+	meshList[GEO_BLUEOVERLAY] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_BLUEOVERLAY]->textureID = LoadTGA("Image//hexblueoverlay.tga");
+	meshList[GEO_REDOVERLAY] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_REDOVERLAY]->textureID = LoadTGA("Image//hexredoverlay.tga");
 
 	bLightEnabled = false;
 }

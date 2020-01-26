@@ -81,6 +81,8 @@ public:
 		GEO_MINE,
 		GEO_BORDER,
 		GEO_DEAD,
+		GEO_BLUEOVERLAY,
+		GEO_REDOVERLAY,
 		NUM_GEOMETRY,
 	};
 public:
