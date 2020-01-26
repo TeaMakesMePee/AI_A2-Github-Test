@@ -54,6 +54,9 @@ public:
 	//Handle player lists
 	void RemoveDeadPlayers();
 
+	//To End Simulation
+	bool CheckGameOver();
+
 	void WriteToFile();
 
 protected:
@@ -103,6 +106,9 @@ protected:
 	int lifeinTurns;
 	bool eventActive;
 	std::vector<GameObject*> mineList;
+
+	//End game
+	bool gameOver;
 };
 
 #endif

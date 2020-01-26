@@ -71,6 +71,9 @@ void SceneTurn::Init()
 	eventTime = static_cast<double>(Math::RandFloatMinMax(30.f, 60.f));
 	eventActive = false;
 	lifeinTurns = 5;
+
+	//End the game
+	gameOver = false;
 }
 
 GameObject* SceneTurn::FetchGO(GameObject::GAMEOBJECT_TYPE type)
@@ -1131,6 +1134,13 @@ void SceneTurn::RemoveDeadPlayers()
 	}
 }
 
+bool SceneTurn::CheckGameOver()
+{
+	if (botsideList.empty() || topsideList.empty() || elapsedTime >= 180.f)
+		gameOver = true;
+	return gameOver;
+}
+
 void SceneTurn::WriteToFile()
 {
 	std::ofstream myfile;
@@ -1471,10 +1481,7 @@ void SceneTurn::Update(double dt)
 		//Update FSM
 		if (target && !target->turnOver)
 			target->sm->Update(dt);
-	}
 
-	if (target)
-	{
 		if (!target->turnOver)
 		{
 			if (timer > TURN_TIME)
@@ -1504,11 +1511,8 @@ void SceneTurn::Update(double dt)
 				}
 			}
 		}
-	}
 
-	//Check if GO has picked up Loot
-	if (target)
-	{
+		//Check if GO has picked up Loot
 		int goIndex = target->curr.y * m_noGrid + target->curr.x;
 		for (int x = 0; x < m_maze.m_loot.size(); ++x)
 		{
