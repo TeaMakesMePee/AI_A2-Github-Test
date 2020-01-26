@@ -908,7 +908,7 @@ void SceneTurn::SetUnitStats(GameObject* go)
 
 void SceneTurn::GenerateEventBombs()
 {
-	//Move this section to right after generating map
+	//Get all empty tiles
 	std::vector<int> EmptyTileIndex;
 	for (int x = 0; x < m_maze.m_grid.size(); ++x)
 	{
@@ -916,17 +916,46 @@ void SceneTurn::GenerateEventBombs()
 			EmptyTileIndex.push_back(x);
 	}
 
+	//Remove loot tiles from the prev saved empty tile list
+	for (int x = 0; x < EmptyTileIndex.size(); ++x)
+	{
+		for (int y = 0; y < m_maze.m_loot.size(); ++y)
+		{
+			if (EmptyTileIndex[x] == m_maze.m_loot[y]->index)
+				EmptyTileIndex.erase(EmptyTileIndex.begin() + x);
+		}
+	}
+
+	//Spawn 5 mines at random locations
 	for (int x = 0; x < 5; ++x)
 	{
 		int random = Math::RandIntMinMax(0, EmptyTileIndex.size() - 1);
-		m_maze.m_grid[EmptyTileIndex[random]] = m_myGrid[EmptyTileIndex[random]] = Maze::TILE_MINE;
+		m_myGrid[EmptyTileIndex[random]] = Maze::TILE_MINE;
 		GameObject* mine = new GameObject(GameObject::GO_MINE);
-		mine->curr.x = EmptyTileIndex[random] % m_noGrid;
-		mine->curr.y = EmptyTileIndex[random] / m_noGrid;
+		mine->curr.Set(EmptyTileIndex[random] % m_noGrid, EmptyTileIndex[random] / m_noGrid);
 		mine->active = true;
 		SetUnitStats(mine);
 		mineList.push_back(mine);
 		EmptyTileIndex.erase(EmptyTileIndex.begin() + random);
+	}
+}
+
+void SceneTurn::Detonate()
+{
+	lifeinTurns = -1;
+	for (auto mine : mineList)
+	{
+		if (mine->active)
+		{
+			for (int x = 0; x < mine->visIndexes.size(); ++x)
+			{
+				if (m_myGrid[mine->visIndexes[x]] == Maze::TILE_WALL)
+				{
+					m_myGrid[mine->visIndexes[x]] = m_maze.m_grid[mine->visIndexes[x]] = Maze::TILE_EMPTY;
+				}
+			}
+			mine->active = false;
+		}
 	}
 }
 
@@ -1168,11 +1197,10 @@ void SceneTurn::Update(double dt)
 	SceneBase::Update(dt);
 	elapsedTime += dt;
 
-	//if (elapsedTime >= eventTime && !eventActive)
-	//{
-	//	eventActive = true;
-	//	GenerateEventBombs();
-	//}
+	if (elapsedTime >= eventTime && !eventActive)
+	{
+		eventActive = true;
+	}
 
 	//Calculating aspect ratio
 	m_worldHeight = 100.f;
@@ -1426,6 +1454,13 @@ void SceneTurn::Update(double dt)
 	{
 		if (target->turnOver && timer > TURN_TIME)
 		{
+			//Generate the event
+			if (elapsedTime >= eventTime && !eventActive)
+			{
+				eventActive = true;
+				GenerateEventBombs();
+			}
+
 			//Remove units that died in the previous turn
 			RemoveDeadPlayers();
 
@@ -1476,6 +1511,10 @@ void SceneTurn::Update(double dt)
 						}
 					}
 				}
+
+				//Reduce mine lifes
+				if (lifeinTurns > 0)
+					lifeinTurns--;
 			}
 		}
 
@@ -1492,8 +1531,21 @@ void SceneTurn::Update(double dt)
 
 			if (eventActive)
 			{
-				for (auto mine : mineList)
-					UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
+				//Only update mine visibility for K9 units
+				if (target->type == GameObject::GO_K9)
+				{
+					for (auto mine : mineList)
+					{
+						if (mine->active)
+							UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
+					}
+				}
+			}
+
+			//Reduce mine lifes and detonate
+			if (lifeinTurns == 0)
+			{
+				Detonate();
 			}
 
 			//Update scene data's grid info

@@ -37,6 +37,7 @@ public:
 	
 	//Event related
 	void GenerateEventBombs();
+	void Detonate();
 
 	//AI Decision
 	void GetAIDecision(GameObject* go);
