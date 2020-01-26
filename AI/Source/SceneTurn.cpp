@@ -1471,15 +1471,6 @@ void SceneTurn::Update(double dt)
 		//Update FSM
 		if (target && !target->turnOver)
 			target->sm->Update(dt);
-		//for (auto bList : botsideList)
-		//{
-		//	bList->sm->Update(dt);
-		//}
-
-		//for (auto tList : topsideList)
-		//{
-		//	tList->sm->Update(dt);
-		//}
 	}
 
 	if (target)
