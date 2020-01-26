@@ -68,7 +68,7 @@ void SceneTurn::Init()
 	botsideTurn = true;
 
 	//Init event variables
-	eventTime = static_cast<double>(Math::RandFloatMinMax(30.f, 60.f));
+	eventTime = static_cast<double>(Math::RandFloatMinMax(1.f, 5.f));
 	eventActive = false;
 	lifeinTurns = 5;
 
@@ -1197,11 +1197,6 @@ void SceneTurn::Update(double dt)
 	SceneBase::Update(dt);
 	elapsedTime += dt;
 
-	if (elapsedTime >= eventTime && !eventActive)
-	{
-		eventActive = true;
-	}
-
 	//Calculating aspect ratio
 	m_worldHeight = 100.f;
 	m_worldWidth = m_worldHeight * (float)Application::GetWindowWidth() / Application::GetWindowHeight();
@@ -1611,49 +1606,58 @@ void SceneTurn::RenderGO(GameObject *go)
 	modelStack.PushMatrix();
 	modelStack.Translate(pos.x, pos.y, pos.z);
 	modelStack.Scale(scale.x, scale.y, scale.z);
-	if (go->sm->GetCurrentState() == "Dead")
+
+	if (go->type != GameObject::GO_MINE)
 	{
-		RenderMesh(meshList[GEO_DEAD], false);
-		if (go->botSide)
-			RenderMesh(meshList[GEO_BLUEOVERLAY], false);
-		else
-			RenderMesh(meshList[GEO_REDOVERLAY], false);
-	}
-	else
-	{
-		switch (go->type)
+		if (go->sm->GetCurrentState() == "Dead")
 		{
-		case GameObject::GO_K9: //Render GO_NPC
-			RenderMesh(meshList[GEO_K9], false);		
+			RenderMesh(meshList[GEO_DEAD], false);
 			if (go->botSide)
 				RenderMesh(meshList[GEO_BLUEOVERLAY], false);
 			else
 				RenderMesh(meshList[GEO_REDOVERLAY], false);
-			break;
-		case GameObject::GO_MINE:
-			RenderMesh(meshList[GEO_MINE], false);
-			break;
+		}
+		else
+		{
+			switch (go->type)
+			{
+			case GameObject::GO_K9: //Render GO_NPC
+				RenderMesh(meshList[GEO_K9], false);
+				if (go->botSide)
+					RenderMesh(meshList[GEO_BLUEOVERLAY], false);
+				else
+					RenderMesh(meshList[GEO_REDOVERLAY], false);
+				break;
+			}
 		}
 	}
+	else
+	{
+		RenderMesh(meshList[GEO_MINE], false);
+	}
+
 	modelStack.PopMatrix();
 
-	if (go->sm->GetCurrentState() != "Dead")
+	if (go->type != GameObject::GO_MINE)
 	{
-		float xScaleRed, xScaleGreen;
-		xScaleRed = scale.x * 0.6f;
-		xScaleGreen = scale.x * (go->currHealth / go->baseHealth) * 0.6f;
+		if (go->sm->GetCurrentState() != "Dead")
+		{
+			float xScaleRed, xScaleGreen;
+			xScaleRed = scale.x * 0.6f;
+			xScaleGreen = scale.x * (go->currHealth / go->baseHealth) * 0.6f;
 
-		modelStack.PushMatrix();
-		modelStack.Translate(pos.x, pos.y - scale.y * 0.65f, 0);
-		modelStack.Scale(xScaleRed, 1.f, 0.f);
-		RenderMesh(meshList[GEO_RED], false);
-		modelStack.PopMatrix();
+			modelStack.PushMatrix();
+			modelStack.Translate(pos.x, pos.y - scale.y * 0.65f, 0);
+			modelStack.Scale(xScaleRed, 1.f, 0.f);
+			RenderMesh(meshList[GEO_RED], false);
+			modelStack.PopMatrix();
 
-		modelStack.PushMatrix();
-		modelStack.Translate(pos.x - (xScaleRed - xScaleGreen) / 2.f, pos.y - scale.y * 0.65f, 0);
-		modelStack.Scale(xScaleGreen, 1.f, 0.f);
-		RenderMesh(meshList[GEO_GREEN], false);
-		modelStack.PopMatrix();
+			modelStack.PushMatrix();
+			modelStack.Translate(pos.x - (xScaleRed - xScaleGreen) / 2.f, pos.y - scale.y * 0.65f, 0);
+			modelStack.Scale(xScaleGreen, 1.f, 0.f);
+			RenderMesh(meshList[GEO_GREEN], false);
+			modelStack.PopMatrix();
+		}
 	}
 }
 
