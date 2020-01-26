@@ -80,6 +80,7 @@ public:
 		GEO_K9,
 		GEO_MINE,
 		GEO_BORDER,
+		GEO_DEAD,
 		NUM_GEOMETRY,
 	};
 public:

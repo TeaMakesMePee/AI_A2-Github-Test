@@ -59,6 +59,8 @@ struct GameObject
 
 	//Turn
 	bool turnOver;
+	double cdTimer;
+	bool turnSkipped;
 	
 	std::vector<Maze::Loot*> buffList;
 

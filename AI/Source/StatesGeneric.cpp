@@ -29,7 +29,7 @@ void StateIdle::Update(double dt)
 		bool found = false;
 		for (int x = 0; x < m_go->adjIndexes.size(); ++x)
 		{
-			if (m_go->targetEnemy->curr.y * 20 + m_go->targetEnemy->curr.x == m_go->adjIndexes[x])
+			if ((m_go->targetEnemy->curr.y * SceneData::GetInstance()->GetGridNo() + m_go->targetEnemy->curr.x) == m_go->adjIndexes[x])
 			{
 				m_go->sm->SetNextState("Attack");
 				found = true;
@@ -42,7 +42,7 @@ void StateIdle::Update(double dt)
 			{
 				for (int y = 0; y < m_go->targetEnemy->adjIndexes.size(); ++y)
 				{
-					if (m_go->visIndexes[x] == m_go->targetEnemy->adjIndexes[y])
+					if (m_go->visIndexes[x] == m_go->targetEnemy->adjIndexes[y] && SceneData::GetInstance()->GetMyGrid()[m_go->visIndexes[x]] > -1)
 					{
 						m_go->targetIndex = m_go->visIndexes[x];
 						m_go->sm->SetNextState("Move");
@@ -78,12 +78,12 @@ void StateMove::Update(double dt)
 {
 	if (m_go->targetEnemy)
 	{
-		//std::cout << "Chase enemy" << std::endl;
 		for (int x = 0; x < m_go->adjIndexes.size(); ++x)
 		{
-			if (m_go->targetEnemy->curr.y * 20 + m_go->targetEnemy->curr.x == m_go->adjIndexes[x])
+			if (m_go->targetEnemy->curr.y * SceneData::GetInstance()->GetGridNo() + m_go->targetEnemy->curr.x == m_go->adjIndexes[x])
 			{
 				m_go->sm->SetNextState("Attack");
+				m_go->path.clear();
 			}
 		}
 	}
@@ -110,8 +110,9 @@ StateAttack::~StateAttack()
 
 void StateAttack::Enter()
 {
-	std::cout << "attack" << std::endl;
 	m_go->targetEnemy->health -= m_go->damage;
+	if (m_go->targetEnemy->health <= 0.f)
+		m_go->targetEnemy->sm->SetNextState("Dead");
 }
 
 void StateAttack::Update(double dt)
@@ -137,11 +138,17 @@ StateDead::~StateDead()
 void StateDead::Enter()
 {
 	//Remember to remove GO from either botSide/topSide list when dead
+	m_go->cdTimer = 2.0;
 }
 
 void StateDead::Update(double dt)
 {
-
+	m_go->cdTimer -= dt;
+	if (m_go->cdTimer <= 0.0)
+	{
+		m_go->active = false;
+		m_go->turnOver = true;
+	}
 }
 
 void StateDead::Exit()

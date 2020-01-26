@@ -9,6 +9,7 @@
 #include <fstream>
 #include "ConcreteMessages.h"
 #include "PostOffice.h"
+#include "SceneData.h"
 
 SceneTurn::SceneTurn()
 {
@@ -34,6 +35,7 @@ void SceneTurn::Init()
 	Math::InitRNG();
 
 	m_noGrid = 12;
+	SceneData::GetInstance()->SetGridNo(m_noGrid);
 	m_gridSize = m_worldHeight / (m_noGrid + 1);
 	m_gridOffset = m_gridSize / 2;
 
@@ -57,7 +59,10 @@ void SceneTurn::Init()
 	SetUnits();
 
 	m_maze.GenerateTiles(0.1f);
-	m_maze.GenerateLoot(0.045f);
+	//m_maze.GenerateLoot(0.045f);
+	m_maze.GenerateLoot(0.25f);
+
+	SceneData::GetInstance()->SetMyGrid(m_myGrid);
 
 	m_rightOffset = 48.f;
 	botsideTurn = true;
@@ -328,7 +333,7 @@ bool SceneTurn::BFS(MazePt start, MazePt end)
 	return false;
 }
 
-void SceneTurn::DFSOnce(GameObject* go)
+bool SceneTurn::DFSOnce(GameObject* go)
 {
 	//go->stack.push_back(go->curr);
 	//go->visited[go->curr.y * m_noGrid + go->curr.x] = true;
@@ -362,9 +367,11 @@ void SceneTurn::DFSOnce(GameObject* go)
 		{
 			go->path.push_back(go->curr);
 			go->path.push_back(nextList[z]);
-			return;
+			return true;
 		}
 	}
+
+	return false;
 
 	////check if up is visited
 	//if (go->curr.y + 1 < m_noGrid)
@@ -932,11 +939,12 @@ void SceneTurn::GetAIDecision(GameObject* go)
 	{
 		for (int y = 0; y < enemyList.size(); ++y)
 		{
-			if (enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x == go->visIndexes[x])
+			if ((enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x) == go->visIndexes[x])
 			{
 				//Set pointer to enemy GO
 				go->targetEnemy = enemyList[y];
 				//Update enemy's adj tiles
+				go->targetEnemy->adjIndexes.clear();
 				UpdateVisibleTiles(go->targetEnemy, go->targetEnemy->curr, 1, false);
 				//Set pointer to enemy GO's index
 				go->targetIndex = enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x;
@@ -1048,7 +1056,13 @@ bool SceneTurn::Handle(Message* message)
 			MazePt end(msgMT->go->targetIndex % m_noGrid, msgMT->go->targetIndex / m_noGrid);
 			if (!AStar(msgMT->go, end))
 			{
-				std::cout << "Failed. " << m_myGrid[end.y * m_noGrid + end.x] << std::endl;
+				std::cout << "Failed " << (msgMT->go->targetEnemy ? "finding an enemy. " : "failed finding loot. ") << m_myGrid[end.y * m_noGrid + end.x] << std::endl;
+				msgMT->go->targetEnemy = NULL;
+				if (!DFSOnce(msgMT->go))
+				{
+					std::cout << "Failed DFS as well." << std::endl;
+					msgMT->go->turnSkipped = true;
+				}
 			}
 		}
 		delete msgMT;
@@ -1096,6 +1110,27 @@ void SceneTurn::RemoveBuff(GameObject* go, Maze::LOOT_TYPE type)
 	}
 }
 
+void SceneTurn::RemoveDeadPlayers()
+{
+	for (int x = 0; x < botsideList.size(); ++x)
+	{
+		if (!botsideList[x]->active)
+		{
+			m_myGrid[botsideList[x]->curr.y * m_noGrid + botsideList[x]->curr.x] = m_maze.m_grid[botsideList[x]->curr.y * m_noGrid + botsideList[x]->curr.x];
+			botsideList.erase(botsideList.begin() + x);
+		}
+	}
+
+	for (int x = 0; x < topsideList.size(); ++x)
+	{
+		if (!topsideList[x]->active)
+		{
+			m_myGrid[topsideList[x]->curr.y * m_noGrid + topsideList[x]->curr.x] = m_maze.m_grid[topsideList[x]->curr.y * m_noGrid + topsideList[x]->curr.x];
+			topsideList.erase(topsideList.begin() + x);
+		}
+	}
+}
+
 void SceneTurn::WriteToFile()
 {
 	std::ofstream myfile;
@@ -1119,11 +1154,11 @@ void SceneTurn::Update(double dt)
 	SceneBase::Update(dt);
 	elapsedTime += dt;
 
-	if (elapsedTime >= eventTime && !eventActive)
-	{
-		eventActive = true;
-		GenerateEventBombs();
-	}
+	//if (elapsedTime >= eventTime && !eventActive)
+	//{
+	//	eventActive = true;
+	//	GenerateEventBombs();
+	//}
 
 	//Calculating aspect ratio
 	m_worldHeight = 100.f;
@@ -1369,18 +1404,36 @@ void SceneTurn::Update(double dt)
 		bLeftState = false;
 	}
 
+	timer += m_speed * dt;
+	static const float TURN_TIME = 0.5f;
+
 	//Swap to other side/opponent
 	if (target)
 	{
-		if (target->turnOver)
+		if (target->turnOver && timer > TURN_TIME)
 		{
+			RemoveDeadPlayers();
 			botsideTurn = !botsideTurn;
-
+			target = NULL;
 			//Choose one of the side's unit (maybe make a function to choose)
-			int rand = Math::RandIntMinMax(0, (botsideTurn ? botsideList.size() - 1 : topsideList.size() - 1));
-			target = (botsideTurn ? botsideList[rand] : topsideList[rand]);
+			std::vector<GameObject*> nextturnList = (botsideTurn ? botsideList : topsideList);
+			for (int x = 0; x < nextturnList.size(); ++x)
+			{
+				if (nextturnList[x]->health <= 0.f)
+				{
+					target = nextturnList[x];
+					break;
+				}
+			}
+			if (target == NULL)
+			{
+				int rand = Math::RandIntMinMax(0, nextturnList.size() - 1);
+				target = nextturnList[rand];
+			}
 			target->turnOver = false;
+			target->turnSkipped = false;
 			timer = 0.0;
+			std::cout << "path size: " << target->path.size() << std::endl;
 
 			//Reduce life and remove buffs
 			if (!target->buffList.empty())
@@ -1412,13 +1465,23 @@ void SceneTurn::Update(double dt)
 				UpdateVisibleTiles(mine, mine->curr, mine->visRadius, true);
 		}
 
+		//Update scene data's grid info
+		SceneData::GetInstance()->SetMyGrid(m_myGrid);
+
 		//Update FSM
-		if (target)
+		if (target && !target->turnOver)
 			target->sm->Update(dt);
+		//for (auto bList : botsideList)
+		//{
+		//	bList->sm->Update(dt);
+		//}
+
+		//for (auto tList : topsideList)
+		//{
+		//	tList->sm->Update(dt);
+		//}
 	}
 
-	timer += m_speed * dt;
-	static const float TURN_TIME = 1.f;
 	if (target)
 	{
 		if (!target->turnOver)
@@ -1473,14 +1536,21 @@ void SceneTurn::RenderGO(GameObject *go)
 	modelStack.PushMatrix();
 	modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * go->curr.x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * go->curr.y + m_gridOffset + ((go->curr.x % 2) ? m_gridSize * 0.5f : 0), 0);
 	modelStack.Scale(m_gridSize * appliedXScale, m_gridSize, m_gridSize);
-	switch (go->type)
+	if (go->sm->GetCurrentState() == "Dead")
 	{
-	case GameObject::GO_K9: //Render GO_NPC
-		RenderMesh(meshList[GEO_K9], false);
-		break;
-	case GameObject::GO_MINE:
-		RenderMesh(meshList[GEO_MINE], false);
-		break;
+		RenderMesh(meshList[GEO_DEAD], false);
+	}
+	else
+	{
+		switch (go->type)
+		{
+		case GameObject::GO_K9: //Render GO_NPC
+			RenderMesh(meshList[GEO_K9], false);
+			break;
+		case GameObject::GO_MINE:
+			RenderMesh(meshList[GEO_MINE], false);
+			break;
+		}
 	}
 	modelStack.PopMatrix();
 }
@@ -1610,6 +1680,8 @@ void SceneTurn::Render()
 			case Maze::TILE_MUD:
 				RenderMesh(meshList[GEO_MUD], false);
 				break;
+			case Maze::TILE_PLAYER:
+				RenderMesh(meshList[GEO_HEXWHITE], false);
 			}
 			modelStack.PopMatrix();
 		}
@@ -1707,7 +1779,7 @@ void SceneTurn::Render()
 		{
 			modelStack.PushMatrix();
 			modelStack.Translate(142.f + (5.f * x), 70.f, 0.f); 
-			modelStack.Scale(m_gridSize* appliedXScale * 1.5f, m_gridSize * 1.5f, m_gridSize * 1.5f);
+			modelStack.Scale(m_gridSize* appliedXScale * 1.2f, m_gridSize * 1.2f, m_gridSize * 1.2f);
 			switch (target->buffList[x]->type)
 			{
 			case Maze::LOOT_DMGBOOST:
@@ -1741,6 +1813,13 @@ void SceneTurn::Render()
 			ss.str("");
 			ss << "Enemy Health: " << target->health;
 			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f / 255.f, 0.f), 3, 58, 33);
+		}
+
+		if (target->turnSkipped)
+		{
+			ss.str("");
+			ss << "Turn skipped. (Blocked by wall/player/bomb).";
+			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f / 255.f, 0.f), 3, 58, 30);
 		}
 	}
 }

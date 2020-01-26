@@ -163,7 +163,6 @@ void SceneBase::Init()
 	meshList[GEO_FOOD] = MeshBuilder::GenerateQuad("healthpack", Color(0.5f, 0.5f, 0.5f), 1.f);
 	meshList[GEO_FOOD]->textureID = LoadTGA("Image//food.tga");
 
-
 	//Tiles
 	meshList[GEO_WATER] = MeshBuilder::GenerateQuad("watertile", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_WATER]->textureID = LoadTGA("Image//hexwater.tga");
@@ -181,6 +180,8 @@ void SceneBase::Init()
 	meshList[GEO_K9]->textureID = LoadTGA("Image//hexk9.tga");
 	meshList[GEO_MINE] = MeshBuilder::GenerateQuad("mine", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_MINE]->textureID = LoadTGA("Image//hexmine.tga");
+	meshList[GEO_DEAD] = MeshBuilder::GenerateQuad("dead", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_DEAD]->textureID = LoadTGA("Image//hexdead.tga");
 
 	//Border
 	meshList[GEO_BORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);

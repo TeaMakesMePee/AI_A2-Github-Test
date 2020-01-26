@@ -53,7 +53,7 @@ void Maze::Generate(unsigned key, unsigned size, MazePt start, float wallLoad)
 	m_key = key;
 	m_size = size;
 	m_numMove = 0;
-	ReadMaze();
+	//ReadMaze();
 }
 
 void Maze::GenerateLoot(float lootLoad)

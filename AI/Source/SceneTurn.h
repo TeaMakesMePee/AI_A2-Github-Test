@@ -28,7 +28,7 @@ public:
 	void DFS(MazePt curr);
 	bool BFS(MazePt start, MazePt end);
 
-	void DFSOnce(GameObject* go);
+	bool DFSOnce(GameObject* go);
 	bool BFSLimit(GameObject* go, MazePt end, int limit);
 
 	bool AStar(GameObject* go, MazePt end);
@@ -50,6 +50,9 @@ public:
 	//Buffs 
 	void AddBuff(GameObject* go, Maze::LOOT_TYPE type);
 	void RemoveBuff(GameObject* go, Maze::LOOT_TYPE type);
+
+	//Handle player lists
+	void RemoveDeadPlayers();
 
 	void WriteToFile();
 
