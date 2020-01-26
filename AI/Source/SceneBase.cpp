@@ -185,7 +185,9 @@ void SceneBase::Init()
 
 	//Border
 	meshList[GEO_BORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
-	meshList[GEO_BORDER]->textureID = LoadTGA("Image//hexborder.tga");
+	meshList[GEO_BORDER]->textureID = LoadTGA("Image//hexborder.tga"); //Used for showing current unit that's in play
+	meshList[GEO_ENEMYBORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_ENEMYBORDER]->textureID = LoadTGA("Image//hexenemyborder.tga");
 
 	//Overlay
 	meshList[GEO_BLUEOVERLAY] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);

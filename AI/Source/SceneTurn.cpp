@@ -1730,6 +1730,15 @@ void SceneTurn::Render()
 		modelStack.Scale(m_gridSize * appliedXScale * 1.2f, m_gridSize * 1.2f, m_gridSize * 1.2f);
 		RenderMesh(meshList[GEO_BORDER], false);
 		modelStack.PopMatrix();
+
+		if (target->targetEnemy)
+		{
+			modelStack.PushMatrix();
+			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * target->targetEnemy->curr.x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * target->targetEnemy->curr.y + m_gridOffset + ((target->targetEnemy->curr.x % 2) ? m_gridSize * 0.5f : 0), 0);
+			modelStack.Scale(m_gridSize * appliedXScale * 1.2f, m_gridSize * 1.2f, m_gridSize * 1.2f);
+			RenderMesh(meshList[GEO_ENEMYBORDER], false);
+			modelStack.PopMatrix();
+		}
 	}
 
 	//On screen text
