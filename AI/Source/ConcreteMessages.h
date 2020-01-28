@@ -28,4 +28,12 @@ struct MessageDetonate : public Message
 	GameObject* go;
 };
 
+struct MessageBombDefused : public Message
+{
+	MessageBombDefused(GameObject* goValue) : go(goValue) {}
+	virtual ~MessageBombDefused() {}
+
+	GameObject* go;
+};
+
 #endif

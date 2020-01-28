@@ -915,37 +915,33 @@ void SceneTurn::SetUnitStats(GameObject* go)
 
 void SceneTurn::GenerateEventBombs()
 {
-	//Get all empty tiles
-	std::vector<int> EmptyTileIndex;
-	for (int x = 0; x < m_maze.m_grid.size(); ++x)
-	{
-		if (m_maze.m_grid[x] == Maze::TILE_EMPTY)
-			EmptyTileIndex.push_back(x);
-	}
-
-	//Remove loot tiles from the prev saved empty tile list
-	for (int x = 0; x < EmptyTileIndex.size(); ++x)
-	{
-		for (int y = 0; y < m_maze.m_loot.size(); ++y)
-		{
-			if (EmptyTileIndex[x] == m_maze.m_loot[y]->index)
-				EmptyTileIndex.erase(EmptyTileIndex.begin() + x);
-		}
-	}
-
 	//Spawn 5 mines at random locations
-	for (int x = 0; x < 5; ++x)
+	for (int i = 0; i < 5;)
 	{
-		int random = Math::RandIntMinMax(0, EmptyTileIndex.size() - 1);
-		m_myGrid[EmptyTileIndex[random]] = Maze::TILE_MINE;
-		GameObject* mine = FetchGO(GameObject::GO_MINE);
-		mine->curr.Set(EmptyTileIndex[random] % m_noGrid, EmptyTileIndex[random] / m_noGrid);
-		mine->active = true;
-		mine->sm->SetNextState("Ticking");
-		mine->eventLife = 5;
-		SetUnitStats(mine);
-		mineList.push_back(mine);
-		EmptyTileIndex.erase(EmptyTileIndex.begin() + random);
+		bool next = false;
+		unsigned chosen = rand() % (int)m_myGrid.size();
+		for (auto loot : m_maze.m_loot)
+		{
+			if (chosen == loot->index)
+			{
+				next = true;
+				break;
+			}
+		}
+		if (next)
+			continue;
+		if (m_myGrid[chosen] == Maze::TILE_EMPTY)
+		{
+			m_myGrid[chosen] = Maze::TILE_MINE;
+			GameObject* mine = FetchGO(GameObject::GO_MINE);
+			mine->curr.Set(chosen % m_noGrid, chosen / m_noGrid);
+			mine->active = true;
+			mine->sm->SetNextState("Ticking");
+			mine->eventLife = 5;
+			SetUnitStats(mine);
+			mineList.push_back(mine);
+		}
+		i++;
 	}
 }
 
@@ -1002,24 +998,46 @@ void SceneTurn::GetAIDecision(GameObject* go)
 	go->targetIndex = -1;
 
 	//Check if event active and K9
-	if (eventActive)
+	bool event = false;
+	for (auto mine : mineList)
+	{
+		if (mine->active)
+		{
+			event = true;
+			break;
+		}
+	}
+	if (event)
 	{
 		if (go->type == GameObject::GO_K9)
 		{
 			//Check if any bombs in visIndex
-			for (int x = 0; x < go->visIndexes.size(); ++x)
+			std::vector<GameObject*> vismineList;
+			for (auto vis : go->visIndexes)
 			{
-				for (auto mines : mineList)
+				for (auto mine : mineList)
 				{
-					for (int z = 0; z < mines->visIndexes.size(); ++z)
+					if (!mine->active)
+						continue;
+					if (mine->curr.y * m_noGrid + mine->curr.x == vis)
 					{
-						if (go->visIndexes[x] == mines->visIndexes[z])
+						vismineList.push_back(mine);
+					}
+				}
+			}
+			for (auto vis : go->visIndexes)
+			{
+				if (m_myGrid[vis] < 0)
+					continue;
+				for (auto mine : vismineList)
+				{
+					for (int z = 0; z < mine->visIndexes.size(); ++z)
+					{
+						if (vis == mine->visIndexes[z])
 						{
-							go->targetEnemy = mines;
-							go->targetEnemy->adjIndexes.clear();
-							UpdateVisibleTiles(go->targetEnemy, go->targetEnemy->curr, 1, false);
-							go->targetIndex = mines->curr.y * m_noGrid + mines->curr.x;
-							break;
+							go->targetEnemy = mine;
+							go->targetIndex = vis;
+							return;
 						}
 					}
 				}
@@ -1034,6 +1052,8 @@ void SceneTurn::GetAIDecision(GameObject* go)
 					continue;
 				for (auto mines : mineList)
 				{
+					if (!mines->active)
+						continue;
 					for (int z = 0; z < mines->visIndexes.size(); ++z)
 					{
 						if (m_myGrid[mines->visIndexes[z]] < 0)
@@ -1055,21 +1075,47 @@ void SceneTurn::GetAIDecision(GameObject* go)
 
 	//Get the first enemy within visibility range, if any
 	std::vector<GameObject*> enemyList = (go->botSide ? topsideList : botsideList);
-	for (int x = 0; x < go->visIndexes.size(); ++x)
+	std::vector<GameObject*> visenemyList;
+	for (auto vis : go->visIndexes)
 	{
-		for (int y = 0; y < enemyList.size(); ++y)
+		for (auto enemy : enemyList)
 		{
-			if ((enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x) == go->visIndexes[x])
+			if (enemy->curr.y * m_noGrid + enemy->curr.x == vis)
 			{
-				//Set pointer to enemy GO
-				go->targetEnemy = enemyList[y];
-				//Update enemy's adj tiles
-				go->targetEnemy->adjIndexes.clear();
-				UpdateVisibleTiles(go->targetEnemy, go->targetEnemy->curr, 1, false);
-				//Set pointer to enemy GO's index
-				go->targetIndex = enemyList[y]->curr.y * m_noGrid + enemyList[y]->curr.x;
+				visenemyList.push_back(enemy);
+			}
+		}
+	}
+
+	for (auto adj : go->adjIndexes)
+	{
+		for (auto enemy : visenemyList)
+		{
+			if (adj == enemy->curr.y * m_noGrid + enemy->curr.x)
+			{
+				go->targetEnemy = enemy;
 				return;
 			}
+		}
+	}
+
+	for (int x = 0; x < go->visIndexes.size(); ++x)
+	{
+		if (m_myGrid[go->visIndexes[x]] < 0)
+			continue;
+		for (auto enemy : visenemyList)
+		{
+			UpdateVisibleTiles(enemy, enemy->curr, 1, false);
+			for (auto enemyAdj : enemy->adjIndexes)
+			{
+				if (go->visIndexes[x] == enemyAdj)
+				{
+					go->targetEnemy = enemy;
+					go->targetIndex = enemyAdj;
+					return;
+				}
+			}
+			enemy->adjIndexes.clear();
 		}
 	}
 
@@ -1092,65 +1138,123 @@ void SceneTurn::GetAIDecision(GameObject* go)
 
 void SceneTurn::SetUnits()
 {
-	for (int x = 388; x < 393; ++x)
-	{
-		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
-		SetUnitStats(go);
-		go->botSide = false;
-		go->grid.resize(m_noGrid * m_noGrid);
-		go->visited.resize(m_noGrid * m_noGrid);
-		go->aGlobal.resize(m_noGrid * m_noGrid);
-		go->aLocal.resize(m_noGrid * m_noGrid);
-		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
-		std::fill(go->visited.begin(), go->visited.end(), false);
-		for (int y = m_myGrid.size() - 1; y > -1; --y)
-		{
-			if (m_myGrid[y] == Maze::TILE_EMPTY)
-			{
-				go->curr.Set(y % m_noGrid, y / m_noGrid);
-				break;
-			}
-		}
-		go->stack.push_back(go->curr);
-		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
-		topsideList.push_back(go);
+	//for (int x = 388; x < 393; ++x)
+	//{
+	//	GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+	//	SetUnitStats(go);
+	//	go->botSide = false;
+	//	go->grid.resize(m_noGrid * m_noGrid);
+	//	go->visited.resize(m_noGrid * m_noGrid);
+	//	go->aGlobal.resize(m_noGrid * m_noGrid);
+	//	go->aLocal.resize(m_noGrid * m_noGrid);
+	//	std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
+	//	std::fill(go->visited.begin(), go->visited.end(), false);
+	//	for (int y = m_myGrid.size() - 1; y > -1; --y)
+	//	{
+	//		if (m_myGrid[y] == Maze::TILE_EMPTY)
+	//		{
+	//			go->curr.Set(y % m_noGrid, y / m_noGrid);
+	//			break;
+	//		}
+	//	}
+	//	go->stack.push_back(go->curr);
+	//	m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+	//	topsideList.push_back(go);
 
-		go->sm->SetNextState("Idle");
+	//	go->sm->SetNextState("Idle");
+	//}
+
+	//for (int x = 0; x < 5; ++x)
+	//{
+	//	GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+
+	//	//Sets stats for the type of Unit
+	//	SetUnitStats(go);
+
+	//	//Declare side
+	//	go->botSide = true;
+
+	//	//Traversal related
+	//	go->grid.resize(m_noGrid * m_noGrid);
+	//	go->visited.resize(m_noGrid * m_noGrid);
+	//	go->aGlobal.resize(m_noGrid * m_noGrid);
+	//	go->aLocal.resize(m_noGrid * m_noGrid);
+	//	std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
+	//	std::fill(go->visited.begin(), go->visited.end(), false);
+	//	for (int y = 0; y < m_myGrid.size(); ++y)
+	//	{
+	//		if (m_myGrid[y] == Maze::TILE_EMPTY)
+	//		{
+	//			go->curr.Set(y % m_noGrid, y / m_noGrid);
+	//			break;
+	//		}
+	//	}
+	//	go->stack.push_back(go->curr);
+	//	m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
+
+	//	//List of players on side
+	//	botsideList.push_back(go);
+	//	target = go;
+
+	//	go->sm->SetNextState("Idle");
+	//}
+
+	srand(time(NULL));
+	for (int i = 0; i < 5;)
+	{
+		unsigned chosen = rand() % (int)m_myGrid.size();
+		if (m_myGrid[chosen] == Maze::TILE_EMPTY)
+		{
+			GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+			SetUnitStats(go);
+			go->botSide = false;
+			go->grid.resize(m_noGrid * m_noGrid);
+			go->visited.resize(m_noGrid * m_noGrid);
+			go->aGlobal.resize(m_noGrid * m_noGrid);
+			go->aLocal.resize(m_noGrid * m_noGrid);
+			std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
+			std::fill(go->visited.begin(), go->visited.end(), false);
+			go->curr.Set(chosen % m_noGrid, chosen / m_noGrid);
+			go->stack.push_back(go->curr);
+			m_myGrid[chosen] = Maze::TILE_PLAYER;
+			topsideList.push_back(go);
+
+			go->sm->SetNextState("Idle");
+			++i;
+		}
 	}
 
-	for (int x = 0; x < 5; ++x)
+	for (int x = 0; x < 5;)
 	{
-		GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
-
-		//Sets stats for the type of Unit
-		SetUnitStats(go);
-
-		//Declare side
-		go->botSide = true;
-
-		//Traversal related
-		go->grid.resize(m_noGrid * m_noGrid);
-		go->visited.resize(m_noGrid * m_noGrid);
-		go->aGlobal.resize(m_noGrid * m_noGrid);
-		go->aLocal.resize(m_noGrid * m_noGrid);
-		std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
-		std::fill(go->visited.begin(), go->visited.end(), false);
-		for (int y = 0; y < m_myGrid.size(); ++y)
+		unsigned chosen = rand() % (int)m_myGrid.size();
+		if (m_myGrid[chosen] == Maze::TILE_EMPTY)
 		{
-			if (m_myGrid[y] == Maze::TILE_EMPTY)
-			{
-				go->curr.Set(y % m_noGrid, y / m_noGrid);
-				break;
-			}
+			GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+
+			//Sets stats for the type of Unit
+			SetUnitStats(go);
+
+			//Declare side
+			go->botSide = true;
+
+			//Traversal related
+			go->grid.resize(m_noGrid * m_noGrid);
+			go->visited.resize(m_noGrid * m_noGrid);
+			go->aGlobal.resize(m_noGrid * m_noGrid);
+			go->aLocal.resize(m_noGrid * m_noGrid);
+			std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
+			std::fill(go->visited.begin(), go->visited.end(), false);
+			go->curr.Set(chosen % m_noGrid, chosen / m_noGrid);
+			go->stack.push_back(go->curr);
+			m_myGrid[chosen] = Maze::TILE_PLAYER;
+
+			//List of players on side
+			botsideList.push_back(go);
+			target = go;
+
+			go->sm->SetNextState("Idle");
+			++x;
 		}
-		go->stack.push_back(go->curr);
-		m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
-
-		//List of players on side
-		botsideList.push_back(go);
-		target = go;
-
-		go->sm->SetNextState("Idle");
 	}
 }
 
@@ -1194,6 +1298,14 @@ bool SceneTurn::Handle(Message* message)
 	{
 		Detonate(msgD->go);
 		delete msgD;
+		return true;
+	}
+
+	MessageBombDefused* msgBD = dynamic_cast<MessageBombDefused*>(message);
+	if (msgBD)
+	{
+		m_myGrid[msgBD->go->curr.y * m_noGrid + msgBD->go->curr.x] = m_maze.m_grid[msgBD->go->curr.y * m_noGrid + msgBD->go->curr.x] = Maze::TILE_EMPTY;
+		delete msgBD;
 		return true;
 	}
 
@@ -1577,6 +1689,7 @@ void SceneTurn::Update(double dt)
 					if (nextturnList[x]->currHealth <= 0.f)
 					{
 						target = nextturnList[x];
+						target->targetEnemy = NULL;
 						break;
 					}
 				}
@@ -1607,7 +1720,6 @@ void SceneTurn::Update(double dt)
 				}
 
 				timer = 0.0;
-				std::cout << "path size: " << target->path.size() << std::endl;
 
 				//Reduce life and remove buffs
 				if (!target->buffList.empty())
@@ -1971,7 +2083,7 @@ void SceneTurn::Render()
 		}
 
 		ss.str("");
-		ss << "Unit: " << name;
+		ss << "Unit: " << name << " (" << target->sm->GetCurrentState() << ")";
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 54);
 
 		ss.str("");
@@ -2030,7 +2142,7 @@ void SceneTurn::Render()
 		{
 			ss.str("");
 			ss << "Turn skipped. (Blocked by wall/player/bomb).";
-			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 69.f / 255.f, 0.f), 3, 58, 30);
+			RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 30);
 		}
 	}
 
@@ -2041,11 +2153,28 @@ void SceneTurn::Render()
 		if (botsideList.size() == topsideList.size())
 			ss << "Draw!";
 		else if (botsideList.size() > topsideList.size())
-			ss << "Blue Team Won!";
+			ss << "Blue Won!";
 		else if (botsideList.size() < topsideList.size())
-			ss << "Red Team Won!";
+			ss << "Red Won!";
 		RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(0.f, 1.f, 0.f), 3, 58, 27);
 	}
+
+	ss.str("");
+	ss << "Blue count: " << botsideList.size();
+	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(0.f, 0.f, 1.f), 3, 58, 18);
+
+	ss.str("");
+	ss << "Red count: " << topsideList.size();
+	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 0.f, 0.f), 3, 58, 21);
+
+	int count = 0;
+	for (auto mines : mineList)
+		if (mines->active)
+			count++;
+
+	ss.str("");
+	ss << "Active mines: " << count;
+	RenderTextOnScreen(meshList[GEO_TEXT], ss.str(), Color(1.f, 1.f, 0.f), 3, 58, 24);
 }
 
 void SceneTurn::Exit()

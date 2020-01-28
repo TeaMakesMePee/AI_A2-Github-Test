@@ -26,31 +26,28 @@ void StateIdle::Update(double dt)
 	}
 	else
 	{
-		bool found = false;
-		for (int x = 0; x < m_go->adjIndexes.size(); ++x)
+		if (m_go->targetIndex == -1)
 		{
-			if ((m_go->targetEnemy->curr.y * SceneData::GetInstance()->GetGridNo() + m_go->targetEnemy->curr.x) == m_go->adjIndexes[x])
-			{
-				m_go->sm->SetNextState("Attack");
-				found = true;
-			}
+			m_go->sm->SetNextState("Attack");
 		}
+		else
+		{
+			m_go->sm->SetNextState("Move");
+		}
+		//bool found = false;
+		//for (int x = 0; x < m_go->adjIndexes.size(); ++x)
+		//{
+		//	if ((m_go->targetEnemy->curr.y * SceneData::GetInstance()->GetGridNo() + m_go->targetEnemy->curr.x) == m_go->adjIndexes[x])
+		//	{
+		//		m_go->sm->SetNextState("Attack");
+		//		found = true;
+		//	}
+		//}
 
-		if (!found)
-		{
-			for (int x = 0; x < m_go->visIndexes.size(); ++x)
-			{
-				for (int y = 0; y < m_go->targetEnemy->adjIndexes.size(); ++y)
-				{
-					if (m_go->visIndexes[x] == m_go->targetEnemy->adjIndexes[y] && SceneData::GetInstance()->GetMyGrid()[m_go->visIndexes[x]] > -1)
-					{
-						m_go->targetIndex = m_go->visIndexes[x];
-						m_go->sm->SetNextState("Move");
-					}
-				}
-			}
-			m_go->targetEnemy->adjIndexes.clear();
-		}
+		//if (!found)
+		//{
+		//	m_go->sm->SetNextState("Move");
+		//}
 	}
 }
 
@@ -114,7 +111,15 @@ void StateAttack::Enter()
 	if (m_go->targetEnemy->currHealth <= 0.f)
 	{
 		m_go->targetEnemy->currHealth = 0.f;
-		m_go->targetEnemy->sm->SetNextState("Dead");
+		if (m_go->targetEnemy->type != GameObject::GO_MINE)
+		{
+			m_go->targetEnemy->sm->SetNextState("Dead");
+		}
+		else
+		{
+			m_go->targetEnemy->active = false;
+			PostOffice::GetInstance()->Send("Scene", new MessageBombDefused(m_go->targetEnemy));
+		}
 	}
 }
 
