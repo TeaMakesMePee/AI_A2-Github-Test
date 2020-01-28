@@ -20,6 +20,16 @@ std::vector<Maze::TILE_CONTENT> SceneData::GetMyGrid()
 	return m_myGrid;
 }
 
+void SceneData::SetEventActive(bool active)
+{
+	eventActive = active;
+}
+
+bool SceneData::GetEventActive(void)
+{
+	return eventActive;
+}
+
 SceneData::SceneData()
 {
 }

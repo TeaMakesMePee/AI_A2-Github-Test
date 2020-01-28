@@ -20,4 +20,12 @@ struct MessageMoveType : public Message
 	GameObject* go;
 };
 
+struct MessageDetonate : public Message
+{
+	MessageDetonate(GameObject* goValue) : go(goValue) {}
+	virtual ~MessageDetonate() {}
+
+	GameObject* go;
+};
+
 #endif

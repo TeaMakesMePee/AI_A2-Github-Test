@@ -37,7 +37,7 @@ public:
 	
 	//Event related
 	void GenerateEventBombs();
-	void Detonate();
+	void Detonate(GameObject* mine);
 
 	//AI Decision
 	void GetAIDecision(GameObject* go);
@@ -57,6 +57,9 @@ public:
 
 	//To End Simulation
 	bool CheckGameOver();
+
+	//Get Vec3 from X/Y
+	Vector3 XYtoVec3(int x, int y);
 
 	void WriteToFile();
 

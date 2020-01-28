@@ -13,6 +13,7 @@ public:
 	int GetGridNo();
 	void SetMyGrid(std::vector<Maze::TILE_CONTENT> grid);
 	std::vector<Maze::TILE_CONTENT> GetMyGrid();
+
 private:
 	SceneData();
 	~SceneData();

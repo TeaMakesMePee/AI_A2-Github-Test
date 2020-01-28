@@ -70,7 +70,6 @@ void SceneTurn::Init()
 	//Init event variables
 	eventTime = static_cast<double>(Math::RandFloatMinMax(1.f, 5.f));
 	eventActive = false;
-	lifeinTurns = 5;
 
 	//End the game
 	gameOver = false;
@@ -98,6 +97,12 @@ GameObject* SceneTurn::FetchGO(GameObject::GAMEOBJECT_TYPE type)
 			go->sm->AddState(new StateIdle("Idle", go));
 			go->sm->AddState(new StateAttack("Attack", go));
 			go->sm->AddState(new StateDead("Dead", go));
+		}
+		else if (type == GameObject::GO_MINE)
+		{
+			go->sm = new StateMachine();
+			go->sm->AddState(new StateDetonate("Detonate", go));
+			go->sm->AddState(new StateTicking("Ticking", go));
 		}
 	}
 	return FetchGO(type);
@@ -340,6 +345,8 @@ bool SceneTurn::DFSOnce(GameObject* go)
 {
 	//go->stack.push_back(go->curr);
 	//go->visited[go->curr.y * m_noGrid + go->curr.x] = true;
+
+	//just randomly move, no need to pop back
 
 	std::vector<MazePt> nextList;
 	const static int offset[][2] = { {0, 1}, {0, -1}, {1, 0}, {-1, 0}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1} };
@@ -931,39 +938,120 @@ void SceneTurn::GenerateEventBombs()
 	{
 		int random = Math::RandIntMinMax(0, EmptyTileIndex.size() - 1);
 		m_myGrid[EmptyTileIndex[random]] = Maze::TILE_MINE;
-		GameObject* mine = new GameObject(GameObject::GO_MINE);
+		GameObject* mine = FetchGO(GameObject::GO_MINE);
 		mine->curr.Set(EmptyTileIndex[random] % m_noGrid, EmptyTileIndex[random] / m_noGrid);
 		mine->active = true;
+		mine->sm->SetNextState("Ticking");
+		mine->eventLife = 5;
 		SetUnitStats(mine);
 		mineList.push_back(mine);
 		EmptyTileIndex.erase(EmptyTileIndex.begin() + random);
 	}
 }
 
-void SceneTurn::Detonate()
+void SceneTurn::Detonate(GameObject* go)
 {
-	lifeinTurns = -1;
-	for (auto mine : mineList)
+	for (int x = 0; x < go->visIndexes.size(); ++x)
 	{
-		if (mine->active)
+		if (m_myGrid[go->visIndexes[x]] == Maze::TILE_WALL)
 		{
-			for (int x = 0; x < mine->visIndexes.size(); ++x)
+			m_myGrid[go->visIndexes[x]] = m_maze.m_grid[go->visIndexes[x]] = Maze::TILE_EMPTY;
+		}
+
+		for (auto bot : botsideList)
+		{
+			if (bot->currHealth > 0.f)
 			{
-				if (m_myGrid[mine->visIndexes[x]] == Maze::TILE_WALL)
+				if (bot->curr.y * m_noGrid + bot->curr.x == go->visIndexes[x])
 				{
-					m_myGrid[mine->visIndexes[x]] = m_maze.m_grid[mine->visIndexes[x]] = Maze::TILE_EMPTY;
+					bot->currHealth -= 100.f;
+					if (bot->currHealth <= 0.f)
+					{
+						bot->currHealth = 0.f;
+						bot->sm->SetNextState("Dead");
+					}
 				}
 			}
-			mine->active = false;
+		}
+
+		for (auto top : topsideList)
+		{
+			if (top->currHealth > 0.f)
+			{
+				if (top->curr.y * m_noGrid + top->curr.x == go->visIndexes[x])
+				{
+					top->currHealth -= 100.f;
+					if (top->currHealth <= 0.f)
+					{
+						top->currHealth = 0.f;
+						top->sm->SetNextState("Dead");
+					}
+				}
+			}
 		}
 	}
+	m_myGrid[go->curr.y * m_noGrid + go->curr.x] = m_maze.m_grid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_EMPTY;
+
+	if (eventActive)
+		eventActive = !eventActive;
 }
 
 void SceneTurn::GetAIDecision(GameObject* go)
 {
 	go->targetEnemy = NULL;
 	go->targetIndex = -1;
-	//Check if event active
+
+	//Check if event active and K9
+	if (eventActive)
+	{
+		if (go->type == GameObject::GO_K9)
+		{
+			//Check if any bombs in visIndex
+			for (int x = 0; x < go->visIndexes.size(); ++x)
+			{
+				for (auto mines : mineList)
+				{
+					for (int z = 0; z < mines->visIndexes.size(); ++z)
+					{
+						if (go->visIndexes[x] == mines->visIndexes[z])
+						{
+							go->targetEnemy = mines;
+							go->targetEnemy->adjIndexes.clear();
+							UpdateVisibleTiles(go->targetEnemy, go->targetEnemy->curr, 1, false);
+							go->targetIndex = mines->curr.y * m_noGrid + mines->curr.x;
+							break;
+						}
+					}
+				}
+			}
+
+			//Get visIndex closest to nearest bomb adj index
+			float magnitude = FLT_MAX;
+			int chosenIndex = -1;
+			for (int x = 0; x < go->visIndexes.size(); ++x)
+			{
+				if (m_myGrid[go->visIndexes[x]] < 0)
+					continue;
+				for (auto mines : mineList)
+				{
+					for (int z = 0; z < mines->visIndexes.size(); ++z)
+					{
+						if (m_myGrid[mines->visIndexes[z]] < 0)
+							continue;
+						Vector3 unitIndexPos = XYtoVec3(go->visIndexes[x] % m_noGrid, go->visIndexes[x] / m_noGrid);
+						Vector3 mineIndexPos = XYtoVec3(mines->visIndexes[z] % m_noGrid, mines->visIndexes[z] / m_noGrid);
+						if ((unitIndexPos - mineIndexPos).Length() < magnitude)
+						{
+							magnitude = (unitIndexPos - mineIndexPos).Length();
+							chosenIndex = go->visIndexes[x];
+						}
+					}
+				}
+			}
+			go->targetIndex = chosenIndex;
+			return;
+		}
+	}
 
 	//Get the first enemy within visibility range, if any
 	std::vector<GameObject*> enemyList = (go->botSide ? topsideList : botsideList);
@@ -1101,6 +1189,14 @@ bool SceneTurn::Handle(Message* message)
 		return true;
 	}
 
+	MessageDetonate* msgD = dynamic_cast<MessageDetonate*>(message);
+	if (msgD)
+	{
+		Detonate(msgD->go);
+		delete msgD;
+		return true;
+	}
+
 	return false;
 }
 
@@ -1172,6 +1268,13 @@ bool SceneTurn::CheckGameOver()
 	if (botsideList.empty() || topsideList.empty() || elapsedTime >= 180.f)
 		gameOver = true;
 	return gameOver;
+}
+
+Vector3 SceneTurn::XYtoVec3(int x, int y)
+{
+	float xPos = m_gridSize * appliedXScale * x * 0.75f + m_gridSize * appliedXScale * 0.5f;
+	float yPos = (!(x % 2) ? m_gridSize * y + m_gridOffset : m_gridSize * y + m_gridOffset + m_gridSize * 0.5f);
+	return Vector3(xPos, yPos, 0);
 }
 
 void SceneTurn::WriteToFile()
@@ -1450,7 +1553,7 @@ void SceneTurn::Update(double dt)
 		if (target->turnOver && timer > TURN_TIME)
 		{
 			//Generate the event
-			if (elapsedTime >= eventTime && !eventActive)
+			if (elapsedTime >= eventTime && !eventActive && mineList.empty())
 			{
 				eventActive = true;
 				GenerateEventBombs();
@@ -1467,7 +1570,7 @@ void SceneTurn::Update(double dt)
 				//Clear the current target
 				target = NULL;
 
-				//Choose one of the side's unit (maybe make a function to choose)
+				//Prioritise dead units to show they died
 				std::vector<GameObject*> nextturnList = (botsideTurn ? botsideList : topsideList);
 				for (int x = 0; x < nextturnList.size(); ++x)
 				{
@@ -1478,6 +1581,19 @@ void SceneTurn::Update(double dt)
 					}
 				}
 
+				//Event is active and no dead units from previous turn, choose a k9 from next team
+				if (eventActive && target == NULL)
+				{
+					for (auto next : nextturnList)
+					{
+						if (next->type == GameObject::GO_K9)
+						{
+							target = next;
+						}
+					}
+				}
+
+				//If target still null choose a random unit from next team
 				if (target == NULL)
 				{
 					int rand = Math::RandIntMinMax(0, nextturnList.size() - 1);
@@ -1507,9 +1623,11 @@ void SceneTurn::Update(double dt)
 					}
 				}
 
-				//Reduce mine lifes
-				if (lifeinTurns > 0)
-					lifeinTurns--;
+				for (auto mine : mineList)
+				{
+					if (mine->active)
+						mine->sm->Update(dt);
+				}
 			}
 		}
 
@@ -1537,23 +1655,14 @@ void SceneTurn::Update(double dt)
 				}
 			}
 
-			//Reduce mine lifes and detonate
-			if (lifeinTurns == 0)
-			{
-				Detonate();
-			}
-
 			//Update scene data's grid info
 			SceneData::GetInstance()->SetMyGrid(m_myGrid);
-
-			//Update FSM
-			//if (target && !target->turnOver)
-			//	target->sm->Update(dt);
 
 			if (!target->turnOver)
 			{
 				//Update FSM
 				target->sm->Update(dt);
+
 
 				if (timer > TURN_TIME)
 				{
@@ -1745,19 +1854,6 @@ void SceneTurn::Render()
 		);
 	// Model matrix : an identity matrix (model will be at the origin)
 	modelStack.LoadIdentity();
-
-	//RenderMesh(meshList[GEO_AXES], false);
-
-	//if (target)
-	//{
-		//target->visIndexes.clear();
-		//UpdateVisibleTiles(target, target->curr, target->visRadius);
-		//if (eventActive)
-		//{
-		//	for (auto mine : mineList)
-		//		UpdateVisibleTiles(mine, mine->curr, mine->visRadius);
-		//}
-	//}
 
 	//Rendering of Map
 	for (int y = 0; y < m_noGrid; ++y)

@@ -52,4 +52,29 @@ public:
 	virtual void Exit();
 };
 
+//States unique to mines
+class StateTicking : public State
+{
+	GameObject* m_go;
+public:
+	StateTicking(const std::string& stateID, GameObject* go);
+	virtual ~StateTicking();
+
+	virtual void Enter();
+	virtual void Update(double dt);
+	virtual void Exit();
+};
+
+class StateDetonate : public State
+{
+	GameObject* m_go;
+public:
+	StateDetonate(const std::string& stateID, GameObject* go);
+	virtual ~StateDetonate();
+
+	virtual void Enter();
+	virtual void Update(double dt);
+	virtual void Exit();
+};
+
 #endif

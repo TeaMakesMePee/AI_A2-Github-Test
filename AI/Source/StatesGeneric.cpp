@@ -112,7 +112,10 @@ void StateAttack::Enter()
 {
 	m_go->targetEnemy->currHealth -= m_go->damage;
 	if (m_go->targetEnemy->currHealth <= 0.f)
+	{
+		m_go->targetEnemy->currHealth = 0.f;
 		m_go->targetEnemy->sm->SetNextState("Dead");
+	}
 }
 
 void StateAttack::Update(double dt)
@@ -152,5 +155,58 @@ void StateDead::Update(double dt)
 }
 
 void StateDead::Exit()
+{
+}
+
+//State unique to mines
+StateTicking::StateTicking(const std::string& stateID, GameObject* go)
+	: State(stateID),
+	m_go(go)
+{
+}
+
+StateTicking::~StateTicking()
+{
+}
+
+void StateTicking::Enter()
+{
+
+}
+
+void StateTicking::Update(double dt)
+{
+	m_go->eventLife--;
+	if (m_go->eventLife < 1)
+		m_go->sm->SetNextState("Detonate");
+}
+
+void StateTicking::Exit()
+{
+}
+
+StateDetonate::StateDetonate(const std::string& stateID, GameObject* go)
+	: State(stateID),
+	m_go(go)
+{
+}
+
+StateDetonate::~StateDetonate()
+{
+}
+
+void StateDetonate::Enter()
+{
+	//Send message
+	PostOffice::GetInstance()->Send("Scene", new MessageDetonate(m_go));
+	m_go->active = false;
+}
+
+void StateDetonate::Update(double dt)
+{
+
+}
+
+void StateDetonate::Exit()
 {
 }
