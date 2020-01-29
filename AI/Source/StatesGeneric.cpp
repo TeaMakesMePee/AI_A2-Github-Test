@@ -34,20 +34,6 @@ void StateIdle::Update(double dt)
 		{
 			m_go->sm->SetNextState("Move");
 		}
-		//bool found = false;
-		//for (int x = 0; x < m_go->adjIndexes.size(); ++x)
-		//{
-		//	if ((m_go->targetEnemy->curr.y * SceneData::GetInstance()->GetGridNo() + m_go->targetEnemy->curr.x) == m_go->adjIndexes[x])
-		//	{
-		//		m_go->sm->SetNextState("Attack");
-		//		found = true;
-		//	}
-		//}
-
-		//if (!found)
-		//{
-		//	m_go->sm->SetNextState("Move");
-		//}
 	}
 }
 

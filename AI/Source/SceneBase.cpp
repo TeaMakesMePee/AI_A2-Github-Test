@@ -182,6 +182,10 @@ void SceneBase::Init()
 	meshList[GEO_MINE]->textureID = LoadTGA("Image//hexmine.tga");
 	meshList[GEO_DEAD] = MeshBuilder::GenerateQuad("dead", Color(0.f, 0.f, 0.f), 1.f);
 	meshList[GEO_DEAD]->textureID = LoadTGA("Image//hexdead.tga");
+	meshList[GEO_SOLDIER] = MeshBuilder::GenerateQuad("dead", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_SOLDIER]->textureID = LoadTGA("Image//hexsoldier.tga");
+	meshList[GEO_ULTRON] = MeshBuilder::GenerateQuad("dead", Color(0.f, 0.f, 0.f), 1.f);
+	meshList[GEO_ULTRON]->textureID = LoadTGA("Image//hexultron.tga");
 
 	//Border
 	meshList[GEO_BORDER] = MeshBuilder::GenerateQuad("border", Color(0.f, 0.f, 0.f), 1.f);

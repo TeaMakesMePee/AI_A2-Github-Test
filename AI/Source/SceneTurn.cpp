@@ -54,12 +54,10 @@ void SceneTurn::Init()
 	std::fill(m_visited.begin(), m_visited.end(), false);
 	std::fill(m_visible.begin(), m_visible.end(), false);
 	m_myGrid[m_start.y * m_noGrid + m_start.x] = Maze::TILE_EMPTY;
+
+	m_maze.GenerateTiles(0.25f);
 	DFS(m_start);
-
 	SetUnits();
-
-	m_maze.GenerateTiles(0.1f);
-	//m_maze.GenerateLoot(0.045f);
 	m_maze.GenerateLoot(0.25f);
 
 	SceneData::GetInstance()->SetMyGrid(m_myGrid);
@@ -91,6 +89,22 @@ GameObject* SceneTurn::FetchGO(GameObject::GAMEOBJECT_TYPE type)
 		GameObject* go = new GameObject(type);
 		m_goList.push_back(go);
 		if (type == GameObject::GO_K9)
+		{
+			go->sm = new StateMachine();
+			go->sm->AddState(new StateMove("Move", go));
+			go->sm->AddState(new StateIdle("Idle", go));
+			go->sm->AddState(new StateAttack("Attack", go));
+			go->sm->AddState(new StateDead("Dead", go));
+		}
+		else if (type == GameObject::GO_SOLDIER)
+		{
+			go->sm = new StateMachine();
+			go->sm->AddState(new StateMove("Move", go));
+			go->sm->AddState(new StateIdle("Idle", go));
+			go->sm->AddState(new StateAttack("Attack", go));
+			go->sm->AddState(new StateDead("Dead", go));
+		}
+		else if (type == GameObject::GO_ULTRON)
 		{
 			go->sm = new StateMachine();
 			go->sm->AddState(new StateMove("Move", go));
@@ -906,6 +920,16 @@ void SceneTurn::SetUnitStats(GameObject* go)
 		go->currHealth = go->baseHealth = 100.f;
 		go->damage = 20.f;
 		break;
+	case GameObject::GO_SOLDIER:
+		go->visRadius = 2;
+		go->currHealth = go->baseHealth = 125.f;
+		go->damage = 25.f;
+		break;
+	case GameObject::GO_ULTRON:
+		go->visRadius = 1;
+		go->currHealth = go->baseHealth = 150.f;
+		go->damage = 30.f;
+		break;
 	case GameObject::GO_MINE:
 		go->visRadius = 1;
 		go->currHealth = go->baseHealth = 1.f;
@@ -1138,74 +1162,21 @@ void SceneTurn::GetAIDecision(GameObject* go)
 
 void SceneTurn::SetUnits()
 {
-	//for (int x = 388; x < 393; ++x)
-	//{
-	//	GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
-	//	SetUnitStats(go);
-	//	go->botSide = false;
-	//	go->grid.resize(m_noGrid * m_noGrid);
-	//	go->visited.resize(m_noGrid * m_noGrid);
-	//	go->aGlobal.resize(m_noGrid * m_noGrid);
-	//	go->aLocal.resize(m_noGrid * m_noGrid);
-	//	std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
-	//	std::fill(go->visited.begin(), go->visited.end(), false);
-	//	for (int y = m_myGrid.size() - 1; y > -1; --y)
-	//	{
-	//		if (m_myGrid[y] == Maze::TILE_EMPTY)
-	//		{
-	//			go->curr.Set(y % m_noGrid, y / m_noGrid);
-	//			break;
-	//		}
-	//	}
-	//	go->stack.push_back(go->curr);
-	//	m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
-	//	topsideList.push_back(go);
-
-	//	go->sm->SetNextState("Idle");
-	//}
-
-	//for (int x = 0; x < 5; ++x)
-	//{
-	//	GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
-
-	//	//Sets stats for the type of Unit
-	//	SetUnitStats(go);
-
-	//	//Declare side
-	//	go->botSide = true;
-
-	//	//Traversal related
-	//	go->grid.resize(m_noGrid * m_noGrid);
-	//	go->visited.resize(m_noGrid * m_noGrid);
-	//	go->aGlobal.resize(m_noGrid * m_noGrid);
-	//	go->aLocal.resize(m_noGrid * m_noGrid);
-	//	std::fill(go->grid.begin(), go->grid.end(), Maze::TILE_FOG);
-	//	std::fill(go->visited.begin(), go->visited.end(), false);
-	//	for (int y = 0; y < m_myGrid.size(); ++y)
-	//	{
-	//		if (m_myGrid[y] == Maze::TILE_EMPTY)
-	//		{
-	//			go->curr.Set(y % m_noGrid, y / m_noGrid);
-	//			break;
-	//		}
-	//	}
-	//	go->stack.push_back(go->curr);
-	//	m_myGrid[go->curr.y * m_noGrid + go->curr.x] = Maze::TILE_PLAYER;
-
-	//	//List of players on side
-	//	botsideList.push_back(go);
-	//	target = go;
-
-	//	go->sm->SetNextState("Idle");
-	//}
-
 	srand(time(NULL));
 	for (int i = 0; i < 5;)
 	{
 		unsigned chosen = rand() % (int)m_myGrid.size();
-		if (m_myGrid[chosen] == Maze::TILE_EMPTY)
+		if (m_myGrid[chosen] > -1)
 		{
-			GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+			GameObject::GAMEOBJECT_TYPE type;
+			if (i < 2)
+				type = GameObject::GO_K9;
+			else if (i < 4)
+				type = GameObject::GO_SOLDIER;
+			else
+				type = GameObject::GO_ULTRON;
+
+			GameObject* go = FetchGO(type);
 			SetUnitStats(go);
 			go->botSide = false;
 			go->grid.resize(m_noGrid * m_noGrid);
@@ -1227,9 +1198,17 @@ void SceneTurn::SetUnits()
 	for (int x = 0; x < 5;)
 	{
 		unsigned chosen = rand() % (int)m_myGrid.size();
-		if (m_myGrid[chosen] == Maze::TILE_EMPTY)
+		if (m_myGrid[chosen] > -1)
 		{
-			GameObject* go = FetchGO(GameObject::GAMEOBJECT_TYPE::GO_K9);
+			GameObject::GAMEOBJECT_TYPE type;
+			if (x < 2)
+				type = GameObject::GO_K9;
+			else if (x < 4)
+				type = GameObject::GO_SOLDIER;
+			else
+				type = GameObject::GO_ULTRON;
+
+			GameObject* go = FetchGO(type);
 
 			//Sets stats for the type of Unit
 			SetUnitStats(go);
@@ -1690,12 +1669,22 @@ void SceneTurn::Update(double dt)
 					{
 						target = nextturnList[x];
 						target->targetEnemy = NULL;
+						target->targetIndex = -1;
 						break;
 					}
 				}
 
 				//Event is active and no dead units from previous turn, choose a k9 from next team
-				if (eventActive && target == NULL)
+				bool eventA = false;
+				for (auto mines : mineList)
+				{
+					if (mines->active)
+					{
+						eventA = true;
+						break;
+					}
+				}
+				if (eventA && target == NULL)
 				{
 					for (auto next : nextturnList)
 					{
@@ -1754,7 +1743,16 @@ void SceneTurn::Update(double dt)
 			//Set Adj indexes
 			UpdateVisibleTiles(target, target->curr, 1, false);
 
-			if (eventActive)
+			bool eventA = false;
+			for (auto mines : mineList)
+			{
+				if (mines->active)
+				{
+					eventA = true;
+					break;
+				}
+			}
+			if (eventA)
 			{
 				//Only update mine visibility for K9 units
 				if (target->type == GameObject::GO_K9)
@@ -1833,10 +1831,6 @@ void SceneTurn::RenderGO(GameObject *go)
 		if (go->sm->GetCurrentState() == "Dead")
 		{
 			RenderMesh(meshList[GEO_DEAD], false);
-			if (go->botSide)
-				RenderMesh(meshList[GEO_BLUEOVERLAY], false);
-			else
-				RenderMesh(meshList[GEO_REDOVERLAY], false);
 		}
 		else
 		{
@@ -1844,13 +1838,19 @@ void SceneTurn::RenderGO(GameObject *go)
 			{
 			case GameObject::GO_K9: //Render GO_NPC
 				RenderMesh(meshList[GEO_K9], false);
-				if (go->botSide)
-					RenderMesh(meshList[GEO_BLUEOVERLAY], false);
-				else
-					RenderMesh(meshList[GEO_REDOVERLAY], false);
+				break;
+			case GameObject::GO_SOLDIER: //Render GO_NPC
+				RenderMesh(meshList[GEO_SOLDIER], false);
+				break;
+			case GameObject::GO_ULTRON: //Render GO_NPC
+				RenderMesh(meshList[GEO_ULTRON], false);
 				break;
 			}
 		}
+		if (go->botSide)
+			RenderMesh(meshList[GEO_BLUEOVERLAY], false);
+		else
+			RenderMesh(meshList[GEO_REDOVERLAY], false);
 	}
 	else
 	{
@@ -2041,6 +2041,14 @@ void SceneTurn::Render()
 		{
 			modelStack.PushMatrix();
 			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * target->targetEnemy->curr.x * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * target->targetEnemy->curr.y + m_gridOffset + ((target->targetEnemy->curr.x % 2) ? m_gridSize * 0.5f : 0), 0);
+			modelStack.Scale(m_gridSize * appliedXScale * 1.2f, m_gridSize * 1.2f, m_gridSize * 1.2f);
+			RenderMesh(meshList[GEO_ENEMYBORDER], false);
+			modelStack.PopMatrix();
+		}
+		else if (target->targetIndex != -1)
+		{
+			modelStack.PushMatrix();
+			modelStack.Translate(m_rightOffset + m_gridSize * appliedXScale * (target->targetIndex % m_noGrid)  * 0.75f + m_gridSize * appliedXScale * 0.5f, m_gridSize * (target->targetIndex / m_noGrid) + m_gridOffset + (((target->targetIndex % m_noGrid) % 2) ? m_gridSize * 0.5f : 0), 0);
 			modelStack.Scale(m_gridSize * appliedXScale * 1.2f, m_gridSize * 1.2f, m_gridSize * 1.2f);
 			RenderMesh(meshList[GEO_ENEMYBORDER], false);
 			modelStack.PopMatrix();

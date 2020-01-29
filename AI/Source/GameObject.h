@@ -15,7 +15,7 @@ struct GameObject
 		GO_BALL,
 		GO_CROSS,
 		GO_CIRCLE,
-		GO_GIANTSOLDIER,
+		GO_ULTRON,
 		GO_SOLDIER,
 		GO_K9,
 		GO_MINE,
